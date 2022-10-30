@@ -9,8 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npm run clean && tsc -p tsconfig.json",
     "server": "node build/server.js",
-    "clean": "rimraf ./build",
-    "start-continuous": "supervisor npm run server"
+    "clean": "rimraf ./build"
   },
   "dependencies": {
     "aws-sdk": "^2.1100.0",
