@@ -7,19 +7,18 @@
 {
 "port": 3001,
 "s3" : {
-"endPoint": "*.amazon.com",
-"accessKeyId": "",
-"secretAccessKey":"",
-"bucketName": "public"
+    "endPoint": "*.amazon.com",
+    "accessKeyId": "",
+    "secretAccessKey":"",
+    "bucketName": "public"
 },
 "cors": {
-"origin": [
-"*"
-],
-"methods": [
-"POST"
-]
-},
+    "origin": "https://local.dev.4based.com:3335",
+    "optionsSuccessStatus": 200,
+    "methods": [
+      "POST"
+    ]
+  },
 "debug": true
 }
 ```
