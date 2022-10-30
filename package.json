@@ -1,7 +1,7 @@
 {
   "name": "s3-mutipart-upload-server",
   "version": "1.0.1",
-  "description": "4based",
+  "description": "S3 Mutipart upload server for S3 compatible apis",
   "main": "s3-mutipart-upload-server",
   "scripts": {
     "start": "npm run build && npm run server",
@@ -20,7 +20,7 @@
     "prettier": "^2.6.1"
   },
   "keywords": [],
-  "author": "4based",
+  "author": "Scan0815",
   "license": "MIT",
   "devDependencies": {
     "@types/cors": "^2.8.12",
