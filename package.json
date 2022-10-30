@@ -6,7 +6,6 @@
   "scripts": {
     "prepare": "npm run build",
     "start": "npm run build && npm run server",
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npm run clean && tsc -p tsconfig.json",
     "server": "node build/server.js",
     "clean": "rimraf ./build"
