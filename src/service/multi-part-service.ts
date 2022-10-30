@@ -44,8 +44,7 @@ export class MultiPartService {
       UploadId: fileId,
     }
 
-    const promises = []
-
+    const promises = [];
     for (let index = 0; index < parts; index++) {
       promises.push(
           this.aws.getSignedUrlPromise("uploadPart", {
