@@ -13,7 +13,7 @@
     "bucketName": "public"
 },
 "cors": {
-    "origin": "https://local.dev.4based.com:3335",
+    "origin": "*",
     "optionsSuccessStatus": 200,
     "methods": [
       "POST"
