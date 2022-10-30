@@ -23,6 +23,7 @@
   "author": "4based",
   "license": "MIT",
   "devDependencies": {
+    "@types/cors": "^2.8.12",
     "@types/express": "^4.17.14",
     "@types/lodash": "^4.14.186",
     "rimraf": "^3.0.2"

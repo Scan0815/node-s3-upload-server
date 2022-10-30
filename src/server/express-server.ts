@@ -1,7 +1,7 @@
 import express from 'express';
 import { createServer, Server } from 'http';
 import {MultiPartService} from "../service/multi-part-service";
-const cors = require('cors');
+import cors from 'cors';
 
 export class ExpressServer {
     private readonly _app: express.Application;
@@ -14,8 +14,8 @@ export class ExpressServer {
         this._app = express();
         this._app.use(express.json());
         this._app.use(express.urlencoded({ extended: true }));
-        this._app.use(cors());
-        this._app.options('*', cors());
+        this._app.use(cors);
+        this._app.options('*', cors);
         this.server = createServer(this._app);
         this.listen();
         this.routes();
