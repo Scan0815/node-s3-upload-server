@@ -2,8 +2,10 @@ import * as AWS from "aws-sdk";
 import { orderBy } from "lodash";
 import {Request, Response} from 'express';
 import * as env from "../.env.json";
+import {Kafka, Partitioners} from "kafkajs";
 
 export class MultiPartService {
+ private kafka = new Kafka(env.kafka.init);
  private s3Endpoint = new AWS.Endpoint(env.s3.endPoint);
  private s3Credentials = new AWS.Credentials({
    accessKeyId: env.s3.accessKeyId,
@@ -67,7 +69,7 @@ export class MultiPartService {
   }
 
   async finalizeMultipartUpload(req:Request, res:Response) {
-    const { fileId, fileKey, parts } = req.body
+    const { fileId, fileKey,transferId, parts } = req.body
 
     const multipartParams = {
       Bucket: env.s3.bucketName,
@@ -79,8 +81,24 @@ export class MultiPartService {
       },
     }
 
-    await this.aws.completeMultipartUpload(multipartParams).promise()
+    const result = await this.aws.completeMultipartUpload(multipartParams).promise()
+    try {
+        const producer = this.kafka.producer({createPartitioner: Partitioners.LegacyPartitioner})
+        await producer.connect()
+        await producer.send({
+            topic: env.kafka.topic,
+            messages: [{
+                value: JSON.stringify(result),
+                headers: {
+                    'transfer-id' : transferId
+                }
+            }]
+        })
+        await producer.disconnect()
+    }catch (e) {
+        console.log(e);
+    }
 
-    res.send()
+      res.send()
   }
 }
