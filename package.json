@@ -4,7 +4,6 @@
   "description": "S3 Mutipart upload server for S3 compatible apis",
   "main": "build/server.js",
   "scripts": {
-    "prepare": "npm run build",
     "start": "npm run build && npm run server",
     "build": "npm run clean && tsc -p tsconfig.json",
     "server": "node build/server.js",
