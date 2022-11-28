@@ -29,6 +29,9 @@ export class ExpressServer {
 
     private routes (): void {
         console.log("init routes");
+        this._app.get("/status",    (_req, _res) => {
+            return 'OK';
+        });
         this._app.post("/uploads/initializeMultipartUpload",    (req, res) => {
             (async () => {
                 await this.service.initializeMultipartUpload(req, res);
