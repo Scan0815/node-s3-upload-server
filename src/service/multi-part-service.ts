@@ -1,7 +1,7 @@
 import * as AWS from "aws-sdk";
 import { orderBy } from "lodash";
 import {Request, Response} from 'express';
-import * as env from "../.env.json";
+let env  = require("../.env.json");
 import {Kafka, Partitioners} from "kafkajs";
 
 export class MultiPartService {

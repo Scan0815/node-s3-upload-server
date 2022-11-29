@@ -5,6 +5,7 @@
   "main": "build/server.js",
   "scripts": {
     "start": "npm run build && npm run server",
+    "copy": "cp .env.json build/.env.json",
     "build": "npm run clean && tsc -p tsconfig.json",
     "server": "node build/server.js",
     "clean": "rimraf ./build"

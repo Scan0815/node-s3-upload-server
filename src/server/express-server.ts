@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer, Server } from 'http';
 import {MultiPartService} from "../service/multi-part-service";
 import cors from 'cors';
-import * as env from  "../.env.json";
+let env  = require("../.env.json");
 export class ExpressServer {
     private readonly _app: express.Application;
     private readonly server: Server;
