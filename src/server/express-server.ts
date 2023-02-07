@@ -2,7 +2,9 @@ import express from 'express';
 import { createServer, Server } from 'http';
 import {MultiPartService} from "../service/multi-part-service";
 import cors from 'cors';
+import {MorganMiddleware} from "../service/morgan-middleware";
 let env  = require("../.env.json");
+
 export class ExpressServer {
     private readonly _app: express.Application;
     private readonly server: Server;
@@ -15,6 +17,7 @@ export class ExpressServer {
         this._app.use(express.json());
         this._app.use(express.urlencoded({ extended: true }));
         this._app.use(cors(env.cors));
+        this._app.use(MorganMiddleware);
         this.server = createServer(this._app);
         this.listen();
         this.routes();

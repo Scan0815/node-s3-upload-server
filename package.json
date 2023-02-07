@@ -18,8 +18,10 @@
     "express": "^4.18.1",
     "kafkajs": "^2.2.2",
     "lodash": "^4.17.21",
+    "morgan": "^1.10.0",
     "nodemon": "^2.0.15",
-    "prettier": "^2.6.1"
+    "prettier": "^2.6.1",
+    "winston": "^3.8.2"
   },
   "keywords": [],
   "author": "Scan0815",
