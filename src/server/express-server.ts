@@ -30,6 +30,7 @@ export class ExpressServer {
     private routes (): void {
         console.log("init routes");
         this._app.get("/status",    (req, res) => {
+            console.log("access ok");
             res.send('OK.');
         });
         this._app.post("/uploads/initializeMultipartUpload",    (req, res) => {
