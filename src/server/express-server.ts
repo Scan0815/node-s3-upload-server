@@ -18,6 +18,7 @@ export class ExpressServer {
         this._app.use(express.urlencoded({ extended: true }));
         this._app.use(cors(env.cors));
         this._app.use(MorganMiddleware);
+        this._app.enable("trust proxy");
         this.server = createServer(this._app);
         this.listen();
         this.routes();
@@ -34,7 +35,7 @@ export class ExpressServer {
         console.log("init routes");
         this._app.get("/status",    (req, res) => {
             console.log((env.cors.origin === "https://4based.com") ? "your on the production system" : "your on the staging system");
-            res.send('OK.');
+            res.send(((env.cors.origin === "https://4based.com") ? "your on the production system" : "your on the staging system"));
         });
         this._app.post("/uploads/initializeMultipartUpload",    (req, res) => {
             (async () => {
