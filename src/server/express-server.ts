@@ -30,7 +30,7 @@ export class ExpressServer {
     private routes (): void {
         console.log("init routes");
         this._app.get("/status",    (req, res) => {
-            console.log("access ok");
+            console.log((env.cors.origin === "https://4based.com") ? "your on the production system" : "your on the staging system");
             res.send('OK.');
         });
         this._app.post("/uploads/initializeMultipartUpload",    (req, res) => {
