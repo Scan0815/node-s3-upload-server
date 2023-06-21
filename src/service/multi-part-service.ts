@@ -3,11 +3,16 @@ import {orderBy} from "lodash";
 import {Request, Response} from 'express';
 
 let env = require("../.env.json");
-import {Kafka, Partitioners} from "kafkajs";
 import {Converter} from "./converter-service";
+import {MongodbService} from "./mongodb-service";
 
 export class MultiPartService {
-    private kafka = new Kafka(env.kafka.init);
+    private mongoDb = new MongodbService(
+        env.mongoDb.url,
+        env.mongoDb.database,
+        env.mongoDb.username,
+        env.mongoDb.passwort,
+        env.mongoDb.port);
     private s3Endpoint = new AWS.Endpoint(env.s3.endPoint);
     private s3Credentials = new AWS.Credentials({
         accessKeyId: env.s3.accessKeyId,
@@ -109,26 +114,15 @@ export class MultiPartService {
                 }
                 await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop);
             }
-            const kafkaMessage = {
-                topic: env.kafka.topic,
-                messages: [{
-                    value: JSON.stringify({
-                        transfer,
-                        storage,
-                        pathObj,
-                        transferId: transferId,
-                        fileId: fileId
-                    }),
-                    headers: {
-                        'transfer-id': transferId
-                    }
-                }]
-            }
-            console.log("send over kafka",   kafkaMessage);
-            const producer = this.kafka.producer({createPartitioner: Partitioners.LegacyPartitioner})
-            await producer.connect()
-            await producer.send(kafkaMessage)
-            await producer.disconnect()
+
+            await this.mongoDb.saveObject("queue",{
+                transfer,
+                storage,
+                pathObj,
+                transferId: transferId,
+                fileId: fileId
+            });
+
         } catch (e) {
             console.log(e);
         }
