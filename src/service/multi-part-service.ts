@@ -91,7 +91,21 @@ export class MultiPartService {
                     fileFromS3,
                     pathObj.images,
                     `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`,
-                    `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`
+                    `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`,
+                    async (event)=>{
+                        console.log(event);
+                        await this.mongoDb.saveObject("queue",{
+                            transfer,
+                            storage,
+                            pathObj,
+                            event,
+                            transferId: transferId,
+                            fileId: fileId
+                        });
+                    },
+                    async (event)=>{
+                        console.log(event);
+                    }
                 )
 
                 console.log(convert);
@@ -103,16 +117,22 @@ export class MultiPartService {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`
                 }
-                await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop);
+                await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop,
+                async (event) => {
+                    console.log(event);
+                    await this.mongoDb.saveObject("queue",{
+                        transfer,
+                        storage,
+                        pathObj,
+                        event,
+                        transferId: transferId,
+                        fileId: fileId
+                    });
+                },
+                async (event)=>{
+                    console.log(event);
+                });
             }
-
-            await this.mongoDb.saveObject("queue",{
-                transfer,
-                storage,
-                pathObj,
-                transferId: transferId,
-                fileId: fileId
-            });
         } catch (e) {
             console.log(e);
         }

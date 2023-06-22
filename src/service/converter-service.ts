@@ -1,7 +1,8 @@
 import cloudConvert from 'cloudconvert';
 import {ImageConverter} from "./image-convert-command-service";
-import {forEach} from "lodash";
 import {ICrop} from "../interfaces/imageConverter";
+import {JobEventData} from "cloudconvert/built/lib/JobsResource";
+import {TaskEventData} from "cloudconvert/built/lib/TasksResource";
 
 export class Converter {
     private readonly cloudConvert: cloudConvert;
@@ -111,7 +112,7 @@ export class Converter {
         }
     }
 
-    async createImages(inputFile:string, exportDir:string,crop:ICrop, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
+    async createImages(inputFile:string, exportDir:string,crop:ICrop,finished:(event:JobEventData) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
         const tasks:any = {};
         tasks["import-from-s3"] = {
             "operation": "import/s3",
@@ -151,16 +152,22 @@ export class Converter {
                 "input": name
             }
         })
-        let job = await this.cloudConvert.jobs.create({
+        const job = await this.cloudConvert.jobs.create({
             "tasks": tasks
         });
 
-        console.log(tasks);
-        //Wait for the task to complete
-        await this.cloudConvert.jobs.wait(job.id);
+        await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
+            // Job has finished
+            console.log(event.job);
+            finished(event)
+        });
+        await this.cloudConvert.jobs.subscribeTaskEvent(job.id, 'finished', event => {
+            // Task has finished
+            taskFinished(event)
+        });
     }
 
-    async convertVideo(inputFile:string, exportDirImages:string, exportFile:string, thumbnailFile:string, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
+    async convertVideo(inputFile:string, exportDirImages:string, exportFile:string, thumbnailFile:string,finished:(event:JobEventData) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
 
         let thumbnailFileName = "file.jpg";
         if(thumbnailFile) {
@@ -249,13 +256,20 @@ export class Converter {
                 "secret_access_key": this.s3secretAccessKey,
                 "input": name
             }
-        })
+        });
 
-        let job = await this.cloudConvert.jobs.create({
+        const job = await this.cloudConvert.jobs.create({
             "tasks": tasks
         });
 
-        // Wait for the task to complete
-        await this.cloudConvert.jobs.wait(job.id);
+        await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
+            // Job has finished
+            console.log(event.job);
+            finished(event)
+        });
+        await this.cloudConvert.jobs.subscribeTaskEvent(job.id, 'finished', event => {
+            // Task has finished
+            taskFinished(event)
+        });
     }
 }
