@@ -1,96 +1,84 @@
-import * as AWS from "aws-sdk";
-import {orderBy} from "lodash";
-import {Request, Response} from 'express';
-
 let env = require("../.env.json");
+import { S3Client, CreateMultipartUploadCommand, CompleteMultipartUploadCommand, UploadPartCommand } from "@aws-sdk/client-s3";
+import { S3RequestPresigner, getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Request, Response } from 'express';
+import { orderBy } from "lodash";
 import {Converter} from "./converter-service";
 import {MongodbService} from "./mongodb-service";
 
 export class MultiPartService {
+    private readonly s3: S3Client;
+    private presigner: S3RequestPresigner;
     private mongoDb = new MongodbService(
         env.mongoDb.url,
         env.mongoDb.database,
         env.mongoDb.username,
         env.mongoDb.passwort,
         env.mongoDb.port);
-    private s3Endpoint = new AWS.Endpoint(env.s3.endPoint);
-    private s3Credentials = new AWS.Credentials({
-        accessKeyId: env.s3.accessKeyId,
-        secretAccessKey: env.s3.secretAccessKey,
-    });
     private convertService = new Converter(env.cloudConvert.apiKey, env.cloudConvert.sandbox, env.s3.bucketName, env.s3.region, env.s3.accessKeyId, env.s3.secretAccessKey, env.s3.endPoint);
-
-    private aws = new AWS.S3({
-        endpoint: this.s3Endpoint,
-        credentials: this.s3Credentials,
-        signatureVersion: "v4"
-    });
-
     constructor() {
+        this.s3 = new S3Client({
+            region: env.s3.region,
+            endpoint: env.s3.endPoint,
+            credentials: {
+                accessKeyId: env.s3.accessKeyId,
+                secretAccessKey: env.s3.secretAccessKey,
+            },
+        });
+        this.presigner = new S3RequestPresigner(this.s3.config);
         console.log("init Upload Server");
     }
 
-    async initializeMultipartUpload(req: Request, res: Response) {
-        const {name, contentType} = req.body
-
-        const multipartParams = {
+    async initializeMultipartUpload(req: Request, res: Response): Promise<void> {
+        const { name, contentType } = req.body;
+        const command = new CreateMultipartUploadCommand({
             Bucket: env.s3.bucketName,
             Key: name,
-            ContentType: contentType
-        }
+            ContentType: contentType,
+        });
 
-        const multipartUpload = await this.aws.createMultipartUpload(multipartParams).promise()
-
+        const multipartUpload = await this.s3.send(command);
         res.send({
             fileId: multipartUpload.UploadId,
             fileKey: multipartUpload.Key,
-        })
+        });
     }
 
-    async getMultipartPreSignedUrls(req: Request, res: Response) {
-        const {fileKey, fileId, parts} = req.body
+    async getMultipartPreSignedUrls(req: Request, res: Response): Promise<void> {
+        const { fileKey, fileId, parts } = req.body;
+        const signedUrls: Array<{ signedUrl: string; PartNumber: number }> = [];
 
-        const multipartParams = {
-            Bucket: env.s3.bucketName,
-            Key: fileKey,
-            UploadId: fileId,
-        }
+        for (let i = 0; i < parts; i++) {
+            const command = new UploadPartCommand({
+                Bucket: env.s3.bucketName,
+                Key: fileKey,
+                UploadId: fileId,
+                PartNumber: i + 1,
+            });
 
-        const promises = [];
-        for (let index = 0; index < parts; index++) {
-            promises.push(
-                this.aws.getSignedUrlPromise("uploadPart", {
-                    ...multipartParams,
-                    PartNumber: index + 1,
-                }),
-            )
-        }
-
-        const signedUrls = await Promise.all(promises)
-
-        const partSignedUrlList = signedUrls.map((signedUrl, index) => {
-            return {
+            const signedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+            signedUrls.push({
                 signedUrl: signedUrl,
-                PartNumber: index + 1,
-            }
-        })
+                PartNumber: i + 1,
+            });
+        }
 
-        res.send(partSignedUrlList)
+        res.send(signedUrls);
     }
 
-    async finalizeMultipartUpload(req: Request, res: Response) {
-        const {fileId, fileKey,fileType, transferId, parts, transfer} = req.body;
-        const multipartParams = {
+    async finalizeMultipartUpload(req: Request, res: Response): Promise<void> {
+        const { fileId, fileKey, fileType, transferId, parts, transfer } = req.body;
+        const command = new CompleteMultipartUploadCommand({
             Bucket: env.s3.bucketName,
             Key: fileKey,
             UploadId: fileId,
             MultipartUpload: {
-                // ordering the parts to make sure they are in the right order
                 Parts: orderBy(parts, ["PartNumber"], ["asc"]),
             },
-        }
+        });
+
         try {
-            const storage = await this.aws.completeMultipartUpload(multipartParams).promise()
+            const storage = await this.s3.send(command);
             const fileFromS3 = (storage.Key as string);
             let pathObj:any = {};
             if (fileType.includes("video")) {
@@ -105,7 +93,12 @@ export class MultiPartService {
                     `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`,
                     `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`
                 )
+
+                console.log(convert);
+
             }
+
+
             if (fileType.includes("image")) {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`
@@ -113,18 +106,17 @@ export class MultiPartService {
                 await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop);
             }
 
-            await this.mongoDb.saveObject("queue_s3",{
+            await this.mongoDb.saveObject("queue",{
                 transfer,
                 storage,
                 pathObj,
                 transferId: transferId,
                 fileId: fileId
             });
-
         } catch (e) {
             console.log(e);
         }
 
-        res.send()
+        res.send();
     }
 }
