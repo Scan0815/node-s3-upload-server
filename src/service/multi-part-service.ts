@@ -79,8 +79,7 @@ export class MultiPartService {
     }
 
     async finalizeMultipartUpload(req: Request, res: Response) {
-        const {fileId, fileKey,fileType, transferId, parts, transfer} = req.body
-        console.log(fileId, fileKey,fileType, transferId, parts, transfer);
+        const {fileId, fileKey,fileType, transferId, parts, transfer} = req.body;
         const multipartParams = {
             Bucket: env.s3.bucketName,
             Key: fileKey,
@@ -111,9 +110,6 @@ export class MultiPartService {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`
                 }
-
-                console.log(fileFromS3);
-
                 await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop);
             }
 
