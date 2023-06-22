@@ -154,6 +154,8 @@ export class Converter {
         let job = await this.cloudConvert.jobs.create({
             "tasks": tasks
         });
+
+        console.log(tasks);
         //Wait for the task to complete
         await this.cloudConvert.jobs.wait(job.id);
     }

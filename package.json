@@ -12,7 +12,7 @@
     "clean": "rimraf ./build"
   },
   "dependencies": {
-    "aws-sdk": "^2.1100.0",
+    "aws-sdk": "^2.1402.0",
     "cloudconvert": "^2.3.1",
     "cors": "^2.8.5",
     "express": "^4.18.1",

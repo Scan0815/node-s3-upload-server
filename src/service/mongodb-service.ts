@@ -2,13 +2,13 @@ import {Db, InsertOneResult, MongoClient} from "mongodb";
 
 export class MongodbService {
     private readonly url: string;
-    private readonly dbName: string;
-    private readonly username: string;
-    private readonly password: string;
-    private readonly port: string;
+    private readonly dbName: string|null;
+    private readonly username: string|null;
+    private readonly password: string|null;
+    private readonly port: string|null;
     private client: MongoClient;
 
-    constructor(url: string, dbName: string, username: string, password: string, port: string = "27017") {
+    constructor(url: string, dbName: string|null = null, username: string|null= null, password: string|null= null, port: string|null = null) {
         this.url = url;
         this.dbName = dbName;
         this.username = username;
@@ -18,14 +18,18 @@ export class MongodbService {
     }
 
     private getConnectionString(): string {
-        return `mongodb://${this.username}:${encodeURIComponent(this.password)}@${this.url}:${this.port}`;
+        if(this.dbName && this.password && this.port && this.password) {
+            return `mongodb://${this.username}:${encodeURIComponent(this.password)}@${this.url}:${this.port}`;
+        }else{
+            return this.url;
+        }
     }
 
     public async connect(): Promise<Db> {
         try {
             await this.client.connect();
             console.log('Verbunden mit der MongoDB-Datenbank');
-            return this.client.db(this.dbName);
+            return this.client.db(this.dbName || undefined);
         } catch (error) {
             console.log('Fehler beim Verbinden mit der Datenbank', error);
             throw error;

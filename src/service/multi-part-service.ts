@@ -80,7 +80,7 @@ export class MultiPartService {
 
     async finalizeMultipartUpload(req: Request, res: Response) {
         const {fileId, fileKey,fileType, transferId, parts, transfer} = req.body
-
+        console.log(fileId, fileKey,fileType, transferId, parts, transfer);
         const multipartParams = {
             Bucket: env.s3.bucketName,
             Key: fileKey,
@@ -93,7 +93,6 @@ export class MultiPartService {
         try {
             const storage = await this.aws.completeMultipartUpload(multipartParams).promise()
             const fileFromS3 = (storage.Key as string);
-            const fileName = (transfer.name as string);
             let pathObj:any = {};
             if (fileType.includes("video")) {
                 pathObj = {
@@ -104,18 +103,21 @@ export class MultiPartService {
                 const convert = await this.convertService.convertVideo(
                     fileFromS3,
                     pathObj.images,
-                    `${pathObj.converted}/${fileName.replace(/\.[^.]+$/, '.mp4')}`,
-                    `${pathObj.thumbnail}/${fileName.replace(/\.[^.]+$/, '.jpg')}`
+                    `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`,
+                    `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`
                 )
             }
             if (fileType.includes("image")) {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`
                 }
+
+                console.log(fileFromS3);
+
                 await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop);
             }
 
-            await this.mongoDb.saveObject("queue",{
+            await this.mongoDb.saveObject("queue_s3",{
                 transfer,
                 storage,
                 pathObj,
