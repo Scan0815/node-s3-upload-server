@@ -12,14 +12,8 @@
     "secretAccessKey":"",
     "bucketName": "public"
 },
- "kafka" : {
-    "init": {
-      "clientId": "",
-      "brokers": [
-        "kafka:31825"
-      ]
-    },
-    "topic": ""
+  "mongoDb" : {
+    "url": "mongodb+srv://{mongo_connection_string}"
   },
 "cors": {
     "origin": "*",
