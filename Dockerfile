@@ -26,8 +26,7 @@ FROM dependencies AS test
 COPY . ./app
 
 RUN npm install
-RUN npm run build
-
+RUN npm run copy
 # --- Build ---
 FROM test AS build
 ENTRYPOINT ["npm","start"]
