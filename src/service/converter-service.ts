@@ -158,7 +158,6 @@ export class Converter {
 
         await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
             // Job has finished
-            console.log(event.job);
             finished(event)
         });
         await this.cloudConvert.jobs.subscribeTaskEvent(job.id, 'finished', event => {
@@ -264,7 +263,6 @@ export class Converter {
 
         await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
             // Job has finished
-            console.log(event.job);
             finished(event)
         });
         await this.cloudConvert.jobs.subscribeTaskEvent(job.id, 'finished', event => {

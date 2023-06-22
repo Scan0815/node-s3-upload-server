@@ -93,7 +93,7 @@ export class MultiPartService {
                     `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`,
                     `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`,
                     async (event)=>{
-                        console.log(event);
+                        env.debug && console.log(event);
                         await this.mongoDb.saveObject("queue",{
                             transfer,
                             storage,
@@ -104,11 +104,10 @@ export class MultiPartService {
                         });
                     },
                     async (event)=>{
-                        console.log(event);
+                        env.debug && console.log(event);
                     }
                 )
 
-                console.log(convert);
 
             }
 
@@ -119,7 +118,7 @@ export class MultiPartService {
                 }
                 await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop,
                 async (event) => {
-                    console.log(event);
+                    env.debug && console.log(event);
                     await this.mongoDb.saveObject("queue",{
                         transfer,
                         storage,
@@ -130,11 +129,11 @@ export class MultiPartService {
                     });
                 },
                 async (event)=>{
-                    console.log(event);
+                    env.debug &&   console.log(event);
                 });
             }
         } catch (e) {
-            console.log(e);
+            env.debug &&  console.log(e);
         }
 
         res.send();
