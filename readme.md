@@ -31,6 +31,11 @@
 npm install
 ```
 
+### copy .env.json to built dir of server
+```
+npm run copy
+```
+
 ### build and start server
 ```
 npm start
