@@ -94,7 +94,7 @@ export class MultiPartService {
                     `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`,
                     async (event)=>{
                         env.debug && console.log(event);
-                        await this.mongoDb.saveObject("queue",{
+                        await this.mongoDb.saveObject(env.mongoDb.collection,{
                             transfer,
                             storage,
                             pathObj,
@@ -119,7 +119,7 @@ export class MultiPartService {
                 await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop,
                 async (event) => {
                     env.debug && console.log(event);
-                    await this.mongoDb.saveObject("queue",{
+                    await this.mongoDb.saveObject(env.mongoDb.collection,{
                         transfer,
                         storage,
                         pathObj,
