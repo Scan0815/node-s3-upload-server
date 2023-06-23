@@ -7,12 +7,13 @@
 {
 "port": 3001,
 "s3" : {
-    "endPoint": "*.amazon.com",
+    "endPoint": "https://*.amazon.com",
     "accessKeyId": "",
     "secretAccessKey":"",
     "bucketName": "public"
 },
   "mongoDb" : {
+    "collection": "queue_s3"
     "url": "mongodb+srv://{mongo_connection_string}"
   },
 "cors": {
