@@ -98,7 +98,7 @@ export class MultiPartService {
                             transfer,
                             storage,
                             pathObj,
-                            event,
+                            //event,
                             transferId: transferId,
                             fileId: fileId
                         });
