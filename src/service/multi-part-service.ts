@@ -110,7 +110,6 @@ export class MultiPartService {
 
             }
 
-
             if (fileType.includes("image")) {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`
