@@ -1,8 +1,10 @@
+let env = require("../.env.json");
 import cloudConvert from 'cloudconvert';
 import {ImageConverter} from "./image-convert-command-service";
 import {ICrop} from "../interfaces/imageConverter";
 import {JobEventData} from "cloudconvert/built/lib/JobsResource";
 import {TaskEventData} from "cloudconvert/built/lib/TasksResource";
+import axios, {AxiosError, AxiosResponse} from 'axios';
 
 export class Converter {
     private readonly cloudConvert: cloudConvert;
@@ -33,8 +35,8 @@ export class Converter {
                       size:string,
                       blur:boolean){
 
-        const inputPath:string = `/input/${inputTask}/${inputFile}`;
-        const outputPath:string = `/output/${size}-${inputFile}`;
+        const inputPath:string = `/resources/${inputTask}/${inputFile}`;
+        const outputPath:string = `/resources/output/${size}-${inputFile}`;
         const converter = new ImageConverter();
         const maxHeight = 2000;
         const maxWidth = 2000;
@@ -152,18 +154,8 @@ export class Converter {
                 "input": name
             }
         })
-        const job = await this.cloudConvert.jobs.create({
-            "tasks": tasks
-        });
-
-        await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
-            // Job has finished
-            finished(event)
-        });
-        await this.cloudConvert.jobs.subscribeTaskEvent(job.id, 'finished', event => {
-            // Task has finished
-            taskFinished(event)
-        });
+        const job = await this.convert(tasks);
+        console.log(job);
     }
 
     async convertVideo(inputFile:string, exportDirImages:string, exportFile:string, thumbnailFile:string,finished:(event:JobEventData) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
@@ -257,17 +249,50 @@ export class Converter {
             }
         });
 
-        const job = await this.cloudConvert.jobs.create({
-            "tasks": tasks
-        });
-
-        await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
+        const job = await this.convert(tasks);
+        console.log(job);
+        /*await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
             // Job has finished
             finished(event)
         });
         await this.cloudConvert.jobs.subscribeTaskEvent(job.id, 'finished', event => {
             // Task has finished
             taskFinished(event)
-        });
+        });*/
     }
+
+
+    async convert(job:any){
+        console.log("convert",env.kloudConvert.api,job);
+        const result = await this.sendJsonData(env.kloudConvert.api,job)
+        console.log(result);
+    }
+
+    async sendJsonData(url: string, jsonData: any): Promise<AxiosResponse<any> | undefined> {
+        try {
+            const response: AxiosResponse = await axios.post(url, jsonData, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            // Zugriff auf die Serverantwort
+            console.log(response.data);
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const serverResponse: AxiosError = error;
+                if(serverResponse && serverResponse.response) {
+                    console.error(`Server responded with status code ${serverResponse.response.status}`);
+                    console.error(`Response body: `, serverResponse.response.data);
+                }
+            } else {
+                // Nicht-Axios-Fehler
+                console.error(`Error: ${error}`);
+            }
+            return undefined;
+        }
+    }
+
+
+
 }
