@@ -35,8 +35,10 @@ export class Converter {
                       size:string,
                       blur:boolean){
 
-        const inputPath:string = `/resources/${inputTask}/${inputFile}`;
-        const outputPath:string = `/resources/output/${size}-${inputFile}`;
+
+
+        const inputPath:string = `resources/${inputFile}`;
+        const outputPath:string = `resources/output/${size}-${inputFile}`;
         const converter = new ImageConverter();
         const maxHeight = 2000;
         const maxWidth = 2000;

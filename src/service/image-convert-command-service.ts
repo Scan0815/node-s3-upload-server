@@ -63,7 +63,7 @@ export class ImageConverter {
     }
 
     destination(destination:string,fileType:string = "jpg"){
-        return `${fileType}:${destination}`;
+        return `${destination}`;
     }
 
     crop(crop:ICrop){
