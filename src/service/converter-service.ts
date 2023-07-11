@@ -24,16 +24,16 @@ export class Converter {
     }
 
     createImageConvertTask(inputTask:string,
-                      outputDir:string,
-                      inputFile:string,
-                      crop:{
-                            x1: number;
-                            y1: number;
-                            x2: number;
-                            y2: number;
-                        }|null,
-                      size:string,
-                      blur:boolean){
+                           outputDir:string,
+                           inputFile:string,
+                           crop:{
+                               x1: number;
+                               y1: number;
+                               x2: number;
+                               y2: number;
+                           }|null,
+                           size:string,
+                           blur:boolean){
 
 
 
@@ -108,7 +108,7 @@ export class Converter {
         return {
             "operation": "command",
             "engine": "imagemagick",
-            "input": inputTask,
+            "input": [inputTask],
             "command": "convert",
             "arguments": converter.getConvertString(commands),
             "engine_version": "7.1.0",
@@ -142,7 +142,7 @@ export class Converter {
                 "access_key_id": this.s3accessKeyId,
                 "key": `${exportDir}/${fileNameBlur}`,
                 "secret_access_key": this.s3secretAccessKey,
-                "input": nameBlur
+                "input": [nameBlur]
             }
             tasks[name] = this.createImageConvertTask("import-from-s3",exportDir,inputFile,crop,size,false);
             tasks["export-images-to-s3"+size] = {
@@ -153,7 +153,7 @@ export class Converter {
                 "access_key_id": this.s3accessKeyId,
                 "key": `${exportDir}/${fileName}`,
                 "secret_access_key": this.s3secretAccessKey,
-                "input": name
+                "input": [name]
             }
         })
         const job = await this.convert(tasks);
@@ -178,10 +178,11 @@ export class Converter {
                 "key": inputFile
             },
             "convert-video-from-s3": {
-                "operation": "convert",
+                "operation": "command",
                 "output_format": "mp4",
+                "command": "ffmpeg",
                 "engine": "ffmpeg",
-                "arguments" : `${inputFile} -c:v libx264 -crf 23 -preset slow -profile:v baseline -level:v 3.0 -vf "scale=720:-1,fps=fps=30" -c:a aac -b:a 128k -vsync 0 ${exportFile}`,
+                "arguments" : `-i resources/${inputFile} -c:v libx264 -crf 23 -preset slow -profile:v baseline -level:v 3.0 -vf scale=720:-1 -vf fps=fps=30 -c:a aac -b:a 128k -vsync 0 resources/output/${exportFile}`,
                 "input": ["import-from-s3"],
                 "video_codec": "x264",
                 "vsync": 0,
@@ -208,8 +209,9 @@ export class Converter {
             },
             "extract-thumbnail-from-video": {
                 "operation": "thumbnail",
-                 "engine": "ffmpeg",
-                "arguments" : `-ss 00:01:00 ${inputFile} -vframes 1 ${exportFile}`,
+                "engine": "ffmpeg",
+                "command": "ffmpeg",
+                "arguments" : `-ss 00:01:00 -i resources/${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
                 "input": ["convert-video-from-s3"],
                 "filename": thumbnailFileName,
                 "output_format": "jpg"
@@ -222,7 +224,7 @@ export class Converter {
                 "key":thumbnailFile,
                 "access_key_id": this.s3accessKeyId,
                 "secret_access_key": this.s3secretAccessKey,
-                "input": "extract-thumbnail-from-video"
+                "input": ["extract-thumbnail-from-video"]
             }
         };
         sizes.map(size => {
@@ -239,7 +241,7 @@ export class Converter {
                 "access_key_id": this.s3accessKeyId,
                 "key": `${exportDirImages}/${fileNameBlur}`,
                 "secret_access_key": this.s3secretAccessKey,
-                "input": nameBlur
+                "input": [nameBlur]
             }
             tasks[name] = this.createImageConvertTask("extract-thumbnail-from-video",exportDirImages, thumbnailFileName,null,size,false);
             tasks["export-images-to-s3"+size] = {
@@ -250,7 +252,7 @@ export class Converter {
                 "access_key_id": this.s3accessKeyId,
                 "key": `${exportDirImages}/${fileName}`,
                 "secret_access_key": this.s3secretAccessKey,
-                "input": name
+                "input": [name]
             }
         });
 
