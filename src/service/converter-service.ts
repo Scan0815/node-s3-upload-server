@@ -181,6 +181,7 @@ export class Converter {
                 "operation": "convert",
                 "output_format": "mp4",
                 "engine": "ffmpeg",
+                "arguments" : `${inputFile} -c:v libx264 -crf 23 -preset slow -profile:v baseline -level:v 3.0 -vf "scale=720:-1,fps=fps=30" -c:a aac -b:a 128k -vsync 0 ${exportFile}`,
                 "input": ["import-from-s3"],
                 "video_codec": "x264",
                 "vsync": 0,
@@ -207,6 +208,8 @@ export class Converter {
             },
             "extract-thumbnail-from-video": {
                 "operation": "thumbnail",
+                 "engine": "ffmpeg",
+                "arguments" : `-ss 00:01:00 ${inputFile} -vframes 1 ${exportFile}`,
                 "input": ["convert-video-from-s3"],
                 "filename": thumbnailFileName,
                 "output_format": "jpg"
