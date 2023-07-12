@@ -160,7 +160,7 @@ export class Converter {
         const job = await this.convert(tasks);
         console.log(job);
 
-        await this.subscribeToJob(job.id",(result:any) => {
+        await this.subscribeToJob(job.id,(result:any) => {
             console.log(result);
         })
     }
