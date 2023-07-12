@@ -5,6 +5,7 @@ import {ICrop} from "../interfaces/imageConverter";
 import {JobEventData} from "cloudconvert/built/lib/JobsResource";
 import {TaskEventData} from "cloudconvert/built/lib/TasksResource";
 import axios, {AxiosError, AxiosResponse} from 'axios';
+import redis from 'redis';
 
 export class Converter {
     private readonly cloudConvert: cloudConvert;
@@ -158,6 +159,10 @@ export class Converter {
         })
         const job = await this.convert(tasks);
         console.log(job);
+
+        this.subscribeToJob(job.id,(result:any) => {
+            console.log(result);
+        })
     }
 
     async convertVideo(inputFile:string, exportDirImages:string, exportFile:string, thumbnailFile:string,finished:(event:JobEventData) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
@@ -258,6 +263,12 @@ export class Converter {
 
         const job = await this.convert(tasks);
         console.log(job);
+
+        this.subscribeToJob(job.id,(result:any) => {
+            console.log(result);
+        })
+
+
         /*await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
             // Job has finished
             finished(event)
@@ -273,6 +284,7 @@ export class Converter {
         console.log("convert",env.kloudConvert.api,job);
         const result = await this.sendJsonData(env.kloudConvert.api,job)
         console.log(result);
+        return result?.data;
     }
 
     async sendJsonData(url: string, jsonData: any): Promise<AxiosResponse<any> | undefined> {
@@ -298,6 +310,19 @@ export class Converter {
             }
             return undefined;
         }
+    }
+
+
+    async subscribeToJob(jobId: string, callback: (result: any) => void) {
+        const client = redis.createClient({
+            socket: {
+                host: env.redis.host,
+                port: env.redis.port
+            },
+            database: env.redis.db
+        });
+        const listener = (message:string, channel:string) => callback(message);
+        await client.subscribe(jobId, listener);
     }
 
 
