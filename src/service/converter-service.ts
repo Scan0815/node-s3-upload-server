@@ -319,7 +319,7 @@ export class Converter {
                 host: env.redis.host,
                 port: env.redis.port
             },
-            database: env.redis.db
+            database: env.redis.DB
         });
         const listener = (message:string, channel:string) => callback(message);
         await client.subscribe(jobId, listener);
