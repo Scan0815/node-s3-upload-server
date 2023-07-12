@@ -5,7 +5,7 @@ import {ICrop} from "../interfaces/imageConverter";
 import {JobEventData} from "cloudconvert/built/lib/JobsResource";
 import {TaskEventData} from "cloudconvert/built/lib/TasksResource";
 import axios, {AxiosError, AxiosResponse} from 'axios';
-import redis from 'redis';
+import { createClient } from 'redis';
 
 export class Converter {
     private readonly cloudConvert: cloudConvert;
@@ -160,7 +160,7 @@ export class Converter {
         const job = await this.convert(tasks);
         console.log(job);
 
-        this.subscribeToJob(job.id,(result:any) => {
+        await this.subscribeToJob(job.id",(result:any) => {
             console.log(result);
         })
     }
@@ -264,7 +264,7 @@ export class Converter {
         const job = await this.convert(tasks);
         console.log(job);
 
-        this.subscribeToJob(job.id,(result:any) => {
+        await this.subscribeToJob(job.id,(result:any) => {
             console.log(result);
         })
 
@@ -314,7 +314,7 @@ export class Converter {
 
 
     async subscribeToJob(jobId: string, callback: (result: any) => void) {
-        const client = redis.createClient({
+        const client = createClient({
             socket: {
                 host: env.redis.host,
                 port: env.redis.port
