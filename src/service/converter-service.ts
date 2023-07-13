@@ -6,6 +6,7 @@ import {JobEventData} from "cloudconvert/built/lib/JobsResource";
 import {TaskEventData} from "cloudconvert/built/lib/TasksResource";
 import axios, {AxiosError, AxiosResponse} from 'axios';
 import { createClient } from 'redis';
+import { JobStatus } from '../interfaces/JobStatus';
 
 export class Converter {
     private readonly cloudConvert: cloudConvert;
@@ -160,7 +161,7 @@ export class Converter {
         const job = await this.convert(tasks);
         console.log(job);
 
-        await this.subscribeToJob(job.id,(result:any) => {
+        await this.subscribeToJob(job!.id,(result:any) => {
             console.log(result);
         })
     }
@@ -262,9 +263,9 @@ export class Converter {
         });
 
         const job = await this.convert(tasks);
-        console.log(job);
+        console.log(job,"job");
 
-        await this.subscribeToJob(job.id,(result:any) => {
+        await this.subscribeToJob(job!.id,(result:any) => {
             console.log(result);
         })
 
@@ -281,21 +282,20 @@ export class Converter {
 
 
     async convert(job:any){
-        console.log("convert",env.kloudConvert.api,job);
+        //console.log("convert",env.kloudConvert.api,job);
         const result = await this.sendJsonData(env.kloudConvert.api,job)
-        console.log(result);
-        return result?.data;
+        console.log(result,"result");
+        return result;
     }
 
-    async sendJsonData(url: string, jsonData: any): Promise<AxiosResponse<any> | undefined> {
+    async sendJsonData(url: string, jsonData: any): Promise<JobStatus | undefined> {
         try {
             const response: AxiosResponse = await axios.post(url, jsonData, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-            // Zugriff auf die Serverantwort
-            console.log(response.data);
+           
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -313,7 +313,7 @@ export class Converter {
     }
 
 
-    async subscribeToJob(jobId: string, callback: (result: any) => void) {
+    async subscribeToJob(jobId: string, callback: (result: JobStatus) => void) {
         const client = createClient({
             socket: {
                 host: env.redis.host,
@@ -321,10 +321,16 @@ export class Converter {
             },
             database: env.redis.DB
         });
-        const listener = (message:string, channel:string) => callback(message);
+
+        client.on('error', (err) => console.log('Redis Client Error', err));
+
+        await client.connect()
+
+        const listener = (message:string, channel:string) => {
+            let jobStatus: JobStatus = JSON.parse(message)
+            callback(jobStatus)
+        }
         await client.subscribe(jobId, listener);
     }
-
-
 
 }
