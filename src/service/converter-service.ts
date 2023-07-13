@@ -159,10 +159,12 @@ export class Converter {
             }
         })
         const job = await this.convert(tasks);
-        console.log(job);
 
-        await this.subscribeToJob(job!.id,(result:any) => {
-            console.log(result);
+        await this.subscribeToJob(job!.id,(result) => {
+
+            if(result.status === "completed") {
+                //handle finished
+            }
         })
     }
 
@@ -263,10 +265,11 @@ export class Converter {
         });
 
         const job = await this.convert(tasks);
-        console.log(job,"job");
 
-        await this.subscribeToJob(job!.id,(result:any) => {
-            console.log(result);
+        await this.subscribeToJob(job!.id,(result) => {
+            if(result.status === "completed") {
+                //handle finished
+            }
         })
 
 
