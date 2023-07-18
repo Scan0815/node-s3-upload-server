@@ -165,13 +165,7 @@ export class Converter {
         })
     }
 
-    async convertVideo(inputFile:string, exportDirImages:string, exportFile:string, thumbnailFile:string,finished:(event:JobEventData) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
-
-        let thumbnailFileName = "file.jpg";
-        if(thumbnailFile) {
-            const parts = thumbnailFile.split('/');
-            thumbnailFileName = parts.pop() as string;
-        }
+    async cloudConvertVideo(inputFile:string, exportFile:string, finished:(event:JobEventData) => {}){
         const tasks:any = {
             "import-from-s3": {
                 "operation": "import/s3",
@@ -183,11 +177,9 @@ export class Converter {
                 "key": inputFile
             },
             "convert-video-from-s3": {
-                "operation": "command",
+                "operation": "convert",
                 "output_format": "mp4",
-                "command": "ffmpeg",
                 "engine": "ffmpeg",
-                "arguments" : `-i resources/${inputFile} -c:v libx264 -crf 23 -preset slow -profile:v baseline -level:v 3.0 -vf scale=720:-1 -vf fps=fps=30 -c:a aac -b:a 128k -vsync 0 resources/output/${exportFile}`,
                 "input": ["import-from-s3"],
                 "video_codec": "x264",
                 "vsync": 0,
@@ -211,6 +203,37 @@ export class Converter {
                 "access_key_id": this.s3accessKeyId,
                 "secret_access_key": this.s3secretAccessKey,
                 "input": ["convert-video-from-s3"]
+            }
+        }
+
+        const job = await this.cloudConvert.jobs.create({
+            "tasks": tasks
+        });
+
+        await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
+            // Job has finished
+            finished(event)
+        });
+
+    }
+
+
+    async extractImagesFromVideo(inputFile:string, exportDirImages:string, thumbnailFile:string,finished:(event:JobEventData) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
+
+        let thumbnailFileName = "file.jpg";
+        if(thumbnailFile) {
+            const parts = thumbnailFile.split('/');
+            thumbnailFileName = parts.pop() as string;
+        }
+        const tasks:any = {
+            "import-from-s3": {
+                "operation": "import/s3",
+                "bucket": this.s3BucketName,
+                "endpoint": this.s3EndPoint,
+                "region": this.s3Region,
+                "access_key_id": this.s3accessKeyId,
+                "secret_access_key": this.s3secretAccessKey,
+                "key": inputFile
             },
             "extract-thumbnail-from-video": {
                 "operation": "thumbnail",

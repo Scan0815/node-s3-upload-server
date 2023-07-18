@@ -87,26 +87,29 @@ export class MultiPartService {
                     converted : `${transferId}/converted/${fileId}`,
                     thumbnail : `${transferId}/thumbnail/${fileId}`,
                 }
-                const convert = await this.convertService.convertVideo(
-                    fileFromS3,
-                    pathObj.images,
-                    `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`,
-                    `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`,
-                    async (event)=>{
-                        env.debug && console.log(event);
-                        await this.mongoDb.saveObject(env.mongoDb.collection,{
-                            transfer,
-                            storage,
-                            pathObj,
-                            transferId: transferId,
-                            fileId: fileId
-                        });
-                    },
-                    async (event)=>{
-                        env.debug && console.log(event);
-                    }
-                )
 
+                const exportPath = `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`;
+
+                await this.convertService.cloudConvertVideo(fileFromS3,exportPath,async() => {
+                    const convert = await this.convertService.extractImagesFromVideo(
+                        exportPath,
+                        pathObj.images,
+                        `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`,
+                        async (event)=>{
+                            env.debug && console.log(event);
+                            await this.mongoDb.saveObject(env.mongoDb.collection,{
+                                transfer,
+                                storage,
+                                pathObj,
+                                transferId: transferId,
+                                fileId: fileId
+                            });
+                        },
+                        async (event)=>{
+                            env.debug && console.log(event);
+                        }
+                    )
+                });
 
             }
 
