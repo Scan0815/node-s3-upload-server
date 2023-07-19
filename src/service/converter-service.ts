@@ -246,22 +246,12 @@ export class Converter {
                 "input": ["convert-video-from-s3"],
                 "filename": thumbnailFileName,
                 "output_format": "jpg"
-            },
-            "export-thumbnail-to-s3": {
-                "operation": "export/s3",
-                "bucket": this.s3BucketName,
-                "endpoint": this.s3EndPoint,
-                "region": this.s3Region,
-                "key":thumbnailFile,
-                "access_key_id": this.s3accessKeyId,
-                "secret_access_key": this.s3secretAccessKey,
-                "input": ["extract-thumbnail-from-video"]
             }
         };
         sizes.map(size => {
             const name = "convert-image-"+size;
             const nameBlur = "convert-image-blur-" + size;
-            tasks[nameBlur] = this.createImageConvertTask("extract-thumbnail-from-video", exportDirImages, thumbnailFileName, null, size, true);
+            tasks[nameBlur] = this.createImageConvertTask("extract-thumbnail-from-video", exportDirImages, "output/"+thumbnailFileName, null, size, true);
             const fileName = `${size}.jpg`;
             const fileNameBlur = `blur/${size}.jpg`;
             tasks["export-images-to-s3-blur" + size] = {
@@ -274,7 +264,7 @@ export class Converter {
                 "secret_access_key": this.s3secretAccessKey,
                 "input": [nameBlur]
             }
-            tasks[name] = this.createImageConvertTask("extract-thumbnail-from-video",exportDirImages, thumbnailFileName,null,size,false);
+            tasks[name] = this.createImageConvertTask("extract-thumbnail-from-video",exportDirImages,"output/"+thumbnailFileName,null,size,false);
             tasks["export-images-to-s3"+size] = {
                 "operation": "export/s3",
                 "bucket": this.s3BucketName,
@@ -286,6 +276,17 @@ export class Converter {
                 "input": [name]
             }
         });
+
+        tasks["export-thumbnail-to-s3"] = {
+            "operation": "export/s3",
+            "bucket": this.s3BucketName,
+            "endpoint": this.s3EndPoint,
+            "region": this.s3Region,
+            "key":thumbnailFile,
+            "access_key_id": this.s3accessKeyId,
+            "secret_access_key": this.s3secretAccessKey,
+            "input": ["extract-thumbnail-from-video"]
+        }
 
         const job = await this.convert(tasks);
 
