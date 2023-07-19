@@ -6,6 +6,7 @@ import {JobEventData} from "cloudconvert/built/lib/JobsResource";
 import {TaskEventData} from "cloudconvert/built/lib/TasksResource";
 import axios, {AxiosError, AxiosResponse} from 'axios';
 import { createClient } from 'redis';
+import { JobStatus } from '../interfaces/JobStatus';
 
 export class Converter {
     private readonly cloudConvert: cloudConvert;
@@ -158,10 +159,12 @@ export class Converter {
             }
         })
         const job = await this.convert(tasks);
-        console.log(job);
 
-        await this.subscribeToJob(job.id,(result:any) => {
-            console.log(result);
+        await this.subscribeToJob(job!.id,(result) => {
+
+            if(result.status === "completed") {
+                //handle finished
+            }
         })
     }
 
@@ -243,22 +246,12 @@ export class Converter {
                 "input": ["convert-video-from-s3"],
                 "filename": thumbnailFileName,
                 "output_format": "jpg"
-            },
-            "export-thumbnail-to-s3": {
-                "operation": "export/s3",
-                "bucket": this.s3BucketName,
-                "endpoint": this.s3EndPoint,
-                "region": this.s3Region,
-                "key":thumbnailFile,
-                "access_key_id": this.s3accessKeyId,
-                "secret_access_key": this.s3secretAccessKey,
-                "input": ["extract-thumbnail-from-video"]
             }
         };
         sizes.map(size => {
             const name = "convert-image-"+size;
             const nameBlur = "convert-image-blur-" + size;
-            tasks[nameBlur] = this.createImageConvertTask("extract-thumbnail-from-video", exportDirImages, thumbnailFileName, null, size, true);
+            tasks[nameBlur] = this.createImageConvertTask("extract-thumbnail-from-video", exportDirImages, "output/"+thumbnailFileName, null, size, true);
             const fileName = `${size}.jpg`;
             const fileNameBlur = `blur/${size}.jpg`;
             tasks["export-images-to-s3-blur" + size] = {
@@ -271,7 +264,7 @@ export class Converter {
                 "secret_access_key": this.s3secretAccessKey,
                 "input": [nameBlur]
             }
-            tasks[name] = this.createImageConvertTask("extract-thumbnail-from-video",exportDirImages, thumbnailFileName,null,size,false);
+            tasks[name] = this.createImageConvertTask("extract-thumbnail-from-video",exportDirImages,"output/"+thumbnailFileName,null,size,false);
             tasks["export-images-to-s3"+size] = {
                 "operation": "export/s3",
                 "bucket": this.s3BucketName,
@@ -284,11 +277,23 @@ export class Converter {
             }
         });
 
-        const job = await this.convert(tasks);
-        console.log(job);
+        tasks["export-thumbnail-to-s3"] = {
+            "operation": "export/s3",
+            "bucket": this.s3BucketName,
+            "endpoint": this.s3EndPoint,
+            "region": this.s3Region,
+            "key":thumbnailFile,
+            "access_key_id": this.s3accessKeyId,
+            "secret_access_key": this.s3secretAccessKey,
+            "input": ["extract-thumbnail-from-video"]
+        }
 
-        await this.subscribeToJob(job.id,(result:any) => {
-            console.log(result);
+        const job = await this.convert(tasks);
+
+        await this.subscribeToJob(job!.id,(result) => {
+            if(result.status === "completed") {
+                //handle finished
+            }
         })
 
 
@@ -304,21 +309,20 @@ export class Converter {
 
 
     async convert(job:any){
-        console.log("convert",env.kloudConvert.api,job);
+        //console.log("convert",env.kloudConvert.api,job);
         const result = await this.sendJsonData(env.kloudConvert.api,job)
-        console.log(result);
-        return result?.data;
+        console.log(result,"result");
+        return result;
     }
 
-    async sendJsonData(url: string, jsonData: any): Promise<AxiosResponse<any> | undefined> {
+    async sendJsonData(url: string, jsonData: any): Promise<JobStatus | undefined> {
         try {
             const response: AxiosResponse = await axios.post(url, jsonData, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-            // Zugriff auf die Serverantwort
-            console.log(response.data);
+           
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -336,7 +340,7 @@ export class Converter {
     }
 
 
-    async subscribeToJob(jobId: string, callback: (result: any) => void) {
+    async subscribeToJob(jobId: string, callback: (result: JobStatus) => void) {
         const client = createClient({
             socket: {
                 host: env.redis.host,
@@ -344,10 +348,16 @@ export class Converter {
             },
             database: env.redis.DB
         });
-        const listener = (message:string, channel:string) => callback(message);
+
+        client.on('error', (err) => console.log('Redis Client Error', err));
+
+        await client.connect()
+
+        const listener = (message:string, channel:string) => {
+            let jobStatus: JobStatus = JSON.parse(message)
+            callback(jobStatus)
+        }
         await client.subscribe(jobId, listener);
     }
-
-
 
 }
