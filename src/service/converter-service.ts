@@ -221,7 +221,7 @@ export class Converter {
     }
 
 
-    async extractImagesFromVideo(inputFile:string, exportDirImages:string, thumbnailFile:string,finished:(event:JobEventData) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
+    async extractImagesFromVideo(inputFile:string, exportDirImages:string, thumbnailFile:string,finished:(event:JobStatus) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
 
         let thumbnailFileName = "file.jpg";
         if(thumbnailFile) {
@@ -290,9 +290,10 @@ export class Converter {
 
         const job = await this.convert(tasks);
 
-        await this.subscribeToJob(job!.id,(result) => {
+        await this.subscribeToJob(job?.id as string,(result) => {
             if(result.status === "completed") {
                 //handle finished
+                finished(result);
             }
         })
 
