@@ -118,7 +118,7 @@ export class Converter {
         }
     }
 
-    async createImages(inputFile:string, exportDir:string,crop:ICrop,finished:(event:JobEventData) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
+    async createImages(inputFile:string, exportDir:string,crop:ICrop,finished:(event:JobStatus) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
         const tasks:any = {};
         tasks["import-from-s3"] = {
             "operation": "import/s3",
@@ -161,9 +161,10 @@ export class Converter {
         const job = await this.convert(tasks);
 
         await this.subscribeToJob(job!.id,(result) => {
-
+            console.log("finished:",result,result.status);
             if(result.status === "completed") {
                 //handle finished
+                finished(result);
             }
         })
     }
@@ -242,7 +243,7 @@ export class Converter {
                 "operation": "thumbnail",
                 "engine": "ffmpeg",
                 "command": "ffmpeg",
-                "arguments" : `-ss 00:01:00 -i resources/${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
+                "arguments" : `-ss 00:00:03 -i resources/${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
                 "input": ["convert-video-from-s3"],
                 "filename": thumbnailFileName,
                 "output_format": "jpg"
@@ -291,6 +292,7 @@ export class Converter {
         const job = await this.convert(tasks);
 
         await this.subscribeToJob(job?.id as string,(result) => {
+            console.log("finished:",result,result.status);
             if(result.status === "completed") {
                 //handle finished
                 finished(result);
@@ -346,8 +348,7 @@ export class Converter {
             socket: {
                 host: env.redis.host,
                 port: env.redis.port
-            },
-            database: env.redis.DB
+            }
         });
 
         client.on('error', (err) => console.log('Redis Client Error', err));
@@ -356,8 +357,12 @@ export class Converter {
 
         const listener = (message:string, channel:string) => {
             let jobStatus: JobStatus = JSON.parse(message)
-            callback(jobStatus)
+            callback(jobStatus);
+            console.log("listener:",jobId, jobStatus);
         }
+
+        console.log("subscribe:",jobId);
+
         await client.subscribe(jobId, listener);
     }
 
