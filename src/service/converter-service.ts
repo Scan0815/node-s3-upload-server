@@ -164,7 +164,6 @@ export class Converter {
         await this.subscribeToJob(job!.id,(result) => {
             console.log("finished:",result,result.status);
             if(result.status === "completed") {
-                finished(result)
                 //handle finished
                 finished(result);
             }
