@@ -40,7 +40,8 @@ export class Converter {
 
 
         const inputPath:string = `resources/${inputFile}`;
-        const outputPath:string = `resources/output/${size}-${inputFile}`;
+        
+        const outputPath:string = blur ? `resources/output/${size}-${inputFile}-blur` : `resources/output/${size}-${inputFile}`;
         const converter = new ImageConverter();
         const maxHeight = 2000;
         const maxWidth = 2000;
@@ -118,7 +119,7 @@ export class Converter {
         }
     }
 
-    async createImages(inputFile:string, exportDir:string,crop:ICrop,finished:(event:JobEventData) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
+    async createImages(inputFile:string, exportDir:string,crop:ICrop,finished:(event:JobStatus) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
         const tasks:any = {};
         tasks["import-from-s3"] = {
             "operation": "import/s3",
@@ -163,6 +164,7 @@ export class Converter {
         await this.subscribeToJob(job!.id,(result) => {
 
             if(result.status === "completed") {
+                finished(result)
                 //handle finished
             }
         })
