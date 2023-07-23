@@ -90,6 +90,15 @@ export class MultiPartService {
 
                 const exportPath = `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`;
 
+                await this.mongoDb.saveObject(env.mongoDb.collection,{
+                    transfer,
+                    storage,
+                    pathObj,
+                    convertingStatus:"start",
+                    transferId: transferId,
+                    fileId: fileId
+                });
+
                 await this.convertService.cloudConvertVideo(fileFromS3,exportPath,async() => {
                     const convert = await this.convertService.extractImagesFromVideo(
                         exportPath,
@@ -101,6 +110,7 @@ export class MultiPartService {
                                 transfer,
                                 storage,
                                 pathObj,
+                                convertingStatus:"finished",
                                 transferId: transferId,
                                 fileId: fileId
                             });
@@ -117,6 +127,16 @@ export class MultiPartService {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`
                 }
+
+                await this.mongoDb.saveObject(env.mongoDb.collection,{
+                    transfer,
+                    storage,
+                    pathObj,
+                    convertingStatus:"start",
+                    transferId: transferId,
+                    fileId: fileId
+                });
+
                 await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop,
                 async (event) => {
                     env.debug && console.log(event);
@@ -125,6 +145,7 @@ export class MultiPartService {
                         storage,
                         pathObj,
                         transferId: transferId,
+                        convertingStatus:"finished",
                         fileId: fileId
                     });
                 },

@@ -162,10 +162,11 @@ export class Converter {
         const job = await this.convert(tasks);
 
         await this.subscribeToJob(job!.id,(result) => {
-
+            console.log("finished:",result,result.status);
             if(result.status === "completed") {
                 finished(result)
                 //handle finished
+                finished(result);
             }
         })
     }
@@ -244,7 +245,7 @@ export class Converter {
                 "operation": "thumbnail",
                 "engine": "ffmpeg",
                 "command": "ffmpeg",
-                "arguments" : `-ss 00:01:00 -i resources/${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
+                "arguments" : `-ss 00:00:03 -i resources/${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
                 "input": ["convert-video-from-s3"],
                 "filename": thumbnailFileName,
                 "output_format": "jpg"
@@ -293,6 +294,7 @@ export class Converter {
         const job = await this.convert(tasks);
 
         await this.subscribeToJob(job?.id as string,(result) => {
+            console.log("finished:",result,result.status);
             if(result.status === "completed") {
                 //handle finished
                 finished(result);
@@ -348,8 +350,7 @@ export class Converter {
             socket: {
                 host: env.redis.host,
                 port: env.redis.port
-            },
-            database: env.redis.DB
+            }
         });
 
         client.on('error', (err) => console.log('Redis Client Error', err));
@@ -358,8 +359,12 @@ export class Converter {
 
         const listener = (message:string, channel:string) => {
             let jobStatus: JobStatus = JSON.parse(message)
-            callback(jobStatus)
+            callback(jobStatus);
+            console.log("listener:",jobId, jobStatus);
         }
+
+        console.log("subscribe:",jobId);
+
         await client.subscribe(jobId, listener);
     }
 
