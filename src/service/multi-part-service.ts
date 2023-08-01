@@ -90,14 +90,19 @@ export class MultiPartService {
 
                 const exportPath = `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`;
 
+                const mediaInfos = await this.convertService.getVideoInfos(exportPath)
+
                 await this.mongoDb.saveObject(env.mongoDb.collection,{
                     transfer,
                     storage,
                     pathObj,
+                    mediaInfos,
                     convertingStatus:"start",
                     transferId: transferId,
                     fileId: fileId
                 });
+
+
 
                 await this.convertService.cloudConvertVideo(fileFromS3,exportPath,async() => {
                     
