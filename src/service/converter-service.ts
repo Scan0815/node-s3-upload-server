@@ -170,6 +170,15 @@ export class Converter {
         })
     }
 
+    async getVideoInfos(key:string){
+        const result = await this.sendJsonData(env.kloudConvert.apiInfo,{
+            "bucket": this.s3BucketName,
+            "key": key
+        })
+        console.log(result,"result");
+        return result;
+    }
+
     async cloudConvertVideo(inputFile:string, exportFile:string, finished:(event:JobEventData) => {}){
         const tasks:any = {
             "import-from-s3": {
@@ -311,7 +320,7 @@ export class Converter {
         return result;
     }
 
-    async sendJsonData(url: string, jsonData: any): Promise<JobStatus | undefined> {
+    async sendJsonData(url: string, jsonData: any): Promise<JobStatus | any | undefined> {
         try {
             const response: AxiosResponse = await axios.post(url, jsonData, {
                 headers: {
