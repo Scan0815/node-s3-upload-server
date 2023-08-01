@@ -103,7 +103,7 @@ export class MultiPartService {
                     
                     const command = new GetObjectCommand({
                         Bucket: env.s3.bucketName,
-                        Key: exportPath, // Replace with your desired object key
+                        Key: exportPath,
                     })
 
                     const signedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 })
