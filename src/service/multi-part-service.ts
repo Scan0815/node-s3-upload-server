@@ -1,5 +1,5 @@
 let env = require("../.env.json");
-import { S3Client, CreateMultipartUploadCommand, CompleteMultipartUploadCommand, UploadPartCommand } from "@aws-sdk/client-s3";
+import { S3Client, CreateMultipartUploadCommand, CompleteMultipartUploadCommand, UploadPartCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { S3RequestPresigner, getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Request, Response } from 'express';
 import { orderBy } from "lodash";
@@ -100,8 +100,16 @@ export class MultiPartService {
                 });
 
                 await this.convertService.cloudConvertVideo(fileFromS3,exportPath,async() => {
+                    
+                    const command = new GetObjectCommand({
+                        Bucket: env.s3.bucketName,
+                        Key: exportPath,
+                    })
+
+                    const signedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 })
+                
                     const convert = await this.convertService.extractImagesFromVideo(
-                        exportPath,
+                        signedUrl,
                         pathObj.images,
                         `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`,
                         async (event)=>{
