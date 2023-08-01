@@ -230,21 +230,13 @@ export class Converter {
             const parts = thumbnailFile.split('/');
             thumbnailFileName = parts.pop() as string;
         }
+
         const tasks:any = {
-            "import-from-s3": {
-                "operation": "import/s3",
-                "bucket": this.s3BucketName,
-                "endpoint": this.s3EndPoint,
-                "region": this.s3Region,
-                "access_key_id": this.s3accessKeyId,
-                "secret_access_key": this.s3secretAccessKey,
-                "key": inputFile
-            },
             "extract-thumbnail-from-video": {
                 "operation": "thumbnail",
                 "engine": "ffmpeg",
                 "command": "ffmpeg",
-                "arguments" : `-ss 00:00:03 -i resources/${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
+                "arguments" : `-ss 00:00:03 -i ${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
                 "input": ["convert-video-from-s3"],
                 "filename": thumbnailFileName,
                 "output_format": "jpg"
