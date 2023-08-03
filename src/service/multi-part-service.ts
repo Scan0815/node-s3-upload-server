@@ -1,4 +1,5 @@
 let env = require("../.env.json");
+import * as Sentry from "@sentry/node";
 import { S3Client, CreateMultipartUploadCommand, CompleteMultipartUploadCommand, UploadPartCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { S3RequestPresigner, getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Request, Response } from 'express';
@@ -171,6 +172,7 @@ export class MultiPartService {
             }
         } catch (e) {
             env.debug &&  console.log(e);
+            Sentry.captureException(e);
             await this.mongoDb.saveObject(env.mongoDb.collection,{
                 transfer,
                 error: e, 
