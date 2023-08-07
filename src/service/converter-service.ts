@@ -1,10 +1,10 @@
 let env = require("../.env.json");
 import cloudConvert from 'cloudconvert';
-import {ImageConverter} from "./image-convert-command-service";
-import {ICrop} from "../interfaces/imageConverter";
-import {JobEventData} from "cloudconvert/built/lib/JobsResource";
-import {TaskEventData} from "cloudconvert/built/lib/TasksResource";
-import axios, {AxiosError, AxiosResponse} from 'axios';
+import { ImageConverter } from "./image-convert-command-service";
+import { ICrop } from "../interfaces/imageConverter";
+import { JobEventData } from "cloudconvert/built/lib/JobsResource";
+import { TaskEventData } from "cloudconvert/built/lib/TasksResource";
+import axios, { AxiosError, AxiosResponse } from 'axios';
 import { createClient } from 'redis';
 import { JobStatus } from '../interfaces/JobStatus';
 
@@ -15,9 +15,9 @@ export class Converter {
     private readonly s3secretAccessKey: string;
     private readonly s3EndPoint: string;
     private readonly s3Region: string;
-    constructor(apiKey: string,sandbox:boolean = false, s3BucketName: string,s3Region: string, s3accessKeyId:string, s3secretAccessKey: string,s3EndPoint:string) {
+    constructor(apiKey: string, sandbox: boolean = false, s3BucketName: string, s3Region: string, s3accessKeyId: string, s3secretAccessKey: string, s3EndPoint: string) {
         console.log("init video converter");
-        this.cloudConvert = new cloudConvert(apiKey,sandbox);
+        this.cloudConvert = new cloudConvert(apiKey, sandbox);
         this.s3BucketName = s3BucketName;
         this.s3accessKeyId = s3accessKeyId;
         this.s3secretAccessKey = s3secretAccessKey;
@@ -25,23 +25,23 @@ export class Converter {
         this.s3Region = s3Region;
     }
 
-    createImageConvertTask(inputTask:string,
-                           outputDir:string,
-                           inputFile:string,
-                           crop:{
-                               x1: number;
-                               y1: number;
-                               x2: number;
-                               y2: number;
-                           }|null,
-                           size:string,
-                           blur:boolean){
+    createImageConvertTask(inputTask: string,
+        outputDir: string,
+        inputFile: string,
+        crop: {
+            x1: number;
+            y1: number;
+            x2: number;
+            y2: number;
+        } | null,
+        size: string,
+        blur: boolean) {
 
 
 
-        const inputPath:string = `resources/${inputFile}`;
-        
-        const outputPath:string = blur ? `resources/output/${size}-${inputFile}-blur` : `resources/output/${size}-${inputFile}`;
+        const inputPath: string = `resources/${inputFile}`;
+
+        const outputPath: string = blur ? `resources/output/${size}-${inputFile}-blur` : `resources/output/${size}-${inputFile}`;
         const converter = new ImageConverter();
         const maxHeight = 2000;
         const maxWidth = 2000;
@@ -56,7 +56,7 @@ export class Converter {
             converter.quality(85),
         ];
 
-        if(crop){
+        if (crop) {
             commands.push(converter.crop(crop));
         }
 
@@ -71,13 +71,13 @@ export class Converter {
                     if (height > maxHeight) {
                         height = maxHeight;
                     }
-                } else if (size.endsWith('xxx')){
+                } else if (size.endsWith('xxx')) {
                     width = parseInt(size.replace(/xxx/g, ''));
                     if (width > maxWidth) {
                         width = maxWidth;
                     }
                 }
-                commands.push(converter.scale(width,height,"None"));
+                commands.push(converter.scale(width, height, "None"));
                 commands.push(converter.rePage());
                 break;
             case size.includes('x'):
@@ -88,19 +88,19 @@ export class Converter {
                 if (height > maxHeight) {
                     height = maxHeight;
                 }
-                commands.push(converter.scale(width,height,"None"));
+                commands.push(converter.scale(width, height, "None"));
                 commands.push(converter.rePage());
                 break;
             case size.includes('max'):
                 height = width = parseInt(size.replace(/max/g, ''));
-                commands.push(converter.scale(width,height,"None"));
+                commands.push(converter.scale(width, height, "None"));
                 commands.push(converter.rePage());
                 break;
         }
 
-        if(blur){
+        if (blur) {
             const scaleFactor = 50;
-            commands.push(converter.resize(width && Math.floor(width/scaleFactor), height && Math.floor(height/scaleFactor)));
+            commands.push(converter.resize(width && Math.floor(width / scaleFactor), height && Math.floor(height / scaleFactor)));
             commands.push(converter.gaussian())
             commands.push(converter.sigma(1))
             commands.push(converter.resize(width, height));
@@ -119,8 +119,8 @@ export class Converter {
         }
     }
 
-    async createImages(inputFile:string, exportDir:string,crop:ICrop,finished:(event:JobStatus) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
-        const tasks:any = {};
+    async createImages(inputFile: string, exportDir: string, crop: ICrop, finished: (event: JobStatus) => {}, taskFinished: (event: TaskEventData) => {}, sizes: string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
+        const tasks: any = {};
         tasks["import-from-s3"] = {
             "operation": "import/s3",
             "bucket": this.s3BucketName,
@@ -132,7 +132,7 @@ export class Converter {
         }
 
         sizes.map(size => {
-            const name = "convert-image-"+size;
+            const name = "convert-image-" + size;
             const nameBlur = "convert-image-blur-" + size;
             tasks[nameBlur] = this.createImageConvertTask("import-from-s3", exportDir, inputFile, crop, size, true);
             const fileName = `${size}.jpg`;
@@ -147,8 +147,8 @@ export class Converter {
                 "secret_access_key": this.s3secretAccessKey,
                 "input": [nameBlur]
             }
-            tasks[name] = this.createImageConvertTask("import-from-s3",exportDir,inputFile,crop,size,false);
-            tasks["export-images-to-s3"+size] = {
+            tasks[name] = this.createImageConvertTask("import-from-s3", exportDir, inputFile, crop, size, false);
+            tasks["export-images-to-s3" + size] = {
                 "operation": "export/s3",
                 "bucket": this.s3BucketName,
                 "endpoint": this.s3EndPoint,
@@ -161,26 +161,44 @@ export class Converter {
         })
         const job = await this.convert(tasks);
 
-        await this.subscribeToJob(job!.id,(result) => {
-            console.log("finished:",result,result.status);
-            if(result.status === "completed") {
+        await this.subscribeToJob(job!.id, (result) => {
+            console.log("finished:", result, result.status);
+            if (result.status === "completed") {
                 //handle finished
                 finished(result);
             }
         })
     }
 
-    async getVideoInfos(key:string){
-        const result = await this.sendJsonData(env.kloudConvert.apiInfo,{
-            "bucket": this.s3BucketName,
-            "key": key
-        })
-        console.log(result,"result");
-        return result;
+    async getVideoInfos(key: string): Promise<any | undefined> {
+
+        const params = new URLSearchParams([
+            ["bucket", this.s3BucketName],
+            ["key", key]
+        ])
+
+        try {
+            const result = await axios.get(env.kloudConvert.apiInfo, { params })
+            let videoInfos = result.data.result
+            
+            return videoInfos
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const serverResponse: AxiosError = error;
+                if (serverResponse && serverResponse.response) {
+                    console.error(`Server responded with status code ${serverResponse.response.status}`);
+                    console.error(`Response body: `, serverResponse.response.data);
+                }
+            } else {
+                // Nicht-Axios-Fehler
+                console.error(`Error: ${error}`);
+            }
+            return undefined;
+        };
     }
 
-    async cloudConvertVideo(inputFile:string, exportFile:string, finished:(event:JobEventData) => {}){
-        const tasks:any = {
+    async cloudConvertVideo(inputFile: string, exportFile: string, finished: (event: JobEventData) => {}) {
+        const tasks: any = {
             "import-from-s3": {
                 "operation": "import/s3",
                 "bucket": this.s3BucketName,
@@ -232,29 +250,29 @@ export class Converter {
     }
 
 
-    async extractImagesFromVideo(inputFile:string, exportDirImages:string, thumbnailFile:string,finished:(event:JobStatus) => {},taskFinished:(event:TaskEventData) => {}, sizes:string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
+    async extractImagesFromVideo(inputFile: string, exportDirImages: string, thumbnailFile: string, finished: (event: JobStatus) => {}, taskFinished: (event: TaskEventData) => {}, sizes: string[] = ['50x50', '60x60', '68x68', '80x80', '100x100', '200x200', '400x400', '500x500', '200xxx', '340xxx', '460xxx', '660xxx', '900xxx', '1200xxx', 'xxx1080']): Promise<void> {
 
         let thumbnailFileName = "file.jpg";
-        if(thumbnailFile) {
+        if (thumbnailFile) {
             const parts = thumbnailFile.split('/');
             thumbnailFileName = parts.pop() as string;
         }
 
-        const tasks:any = {
+        const tasks: any = {
             "extract-thumbnail-from-video": {
                 "operation": "thumbnail",
                 "engine": "ffmpeg",
                 "command": "ffmpeg",
-                "arguments" : `-ss 00:00:03 -i ${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
+                "arguments": `-ss 00:00:03 -i ${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
                 "input": ["convert-video-from-s3"],
                 "filename": thumbnailFileName,
                 "output_format": "jpg"
             }
         };
         sizes.map(size => {
-            const name = "convert-image-"+size;
+            const name = "convert-image-" + size;
             const nameBlur = "convert-image-blur-" + size;
-            tasks[nameBlur] = this.createImageConvertTask("extract-thumbnail-from-video", exportDirImages, "output/"+thumbnailFileName, null, size, true);
+            tasks[nameBlur] = this.createImageConvertTask("extract-thumbnail-from-video", exportDirImages, "output/" + thumbnailFileName, null, size, true);
             const fileName = `${size}.jpg`;
             const fileNameBlur = `blur/${size}.jpg`;
             tasks["export-images-to-s3-blur" + size] = {
@@ -267,8 +285,8 @@ export class Converter {
                 "secret_access_key": this.s3secretAccessKey,
                 "input": [nameBlur]
             }
-            tasks[name] = this.createImageConvertTask("extract-thumbnail-from-video",exportDirImages,"output/"+thumbnailFileName,null,size,false);
-            tasks["export-images-to-s3"+size] = {
+            tasks[name] = this.createImageConvertTask("extract-thumbnail-from-video", exportDirImages, "output/" + thumbnailFileName, null, size, false);
+            tasks["export-images-to-s3" + size] = {
                 "operation": "export/s3",
                 "bucket": this.s3BucketName,
                 "endpoint": this.s3EndPoint,
@@ -285,7 +303,7 @@ export class Converter {
             "bucket": this.s3BucketName,
             "endpoint": this.s3EndPoint,
             "region": this.s3Region,
-            "key":thumbnailFile,
+            "key": thumbnailFile,
             "access_key_id": this.s3accessKeyId,
             "secret_access_key": this.s3secretAccessKey,
             "input": ["extract-thumbnail-from-video"]
@@ -293,9 +311,9 @@ export class Converter {
 
         const job = await this.convert(tasks);
 
-        await this.subscribeToJob(job?.id as string,(result) => {
-            console.log("finished:",result,result.status);
-            if(result.status === "completed") {
+        await this.subscribeToJob(job?.id as string, (result) => {
+            console.log("finished:", result, result.status);
+            if (result.status === "completed") {
                 //handle finished
                 finished(result);
             }
@@ -313,10 +331,10 @@ export class Converter {
     }
 
 
-    async convert(job:any){
+    async convert(job: any) {
         //console.log("convert",env.kloudConvert.api,job);
-        const result = await this.sendJsonData(env.kloudConvert.api,job)
-        console.log(result,"result");
+        const result = await this.sendJsonData(env.kloudConvert.api, job)
+        console.log(result, "result");
         return result;
     }
 
@@ -327,12 +345,12 @@ export class Converter {
                     'Content-Type': 'application/json'
                 }
             });
-           
+
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const serverResponse: AxiosError = error;
-                if(serverResponse && serverResponse.response) {
+                if (serverResponse && serverResponse.response) {
                     console.error(`Server responded with status code ${serverResponse.response.status}`);
                     console.error(`Response body: `, serverResponse.response.data);
                 }
@@ -357,13 +375,13 @@ export class Converter {
 
         await client.connect()
 
-        const listener = (message:string, channel:string) => {
+        const listener = (message: string, channel: string) => {
             let jobStatus: JobStatus = JSON.parse(message)
             callback(jobStatus);
-            console.log("listener:",jobId, jobStatus);
+            console.log("listener:", jobId, jobStatus);
         }
 
-        console.log("subscribe:",jobId);
+        console.log("subscribe:", jobId);
 
         await client.subscribe(jobId, listener);
     }

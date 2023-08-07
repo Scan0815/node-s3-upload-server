@@ -1,4 +1,5 @@
 let env = require("../.env.json");
+import * as Sentry from "@sentry/node";
 import { S3Client, CreateMultipartUploadCommand, CompleteMultipartUploadCommand, UploadPartCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { S3RequestPresigner, getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Request, Response } from 'express';
@@ -90,19 +91,21 @@ export class MultiPartService {
 
                 const exportPath = `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`;
 
-                const mediaInfos = await this.convertService.getVideoInfos(exportPath)
+                const mediaInfos = await this.convertService.getVideoInfos(fileFromS3)
+
+                if (!mediaInfos) {
+                    throw Error("No media infos for file")
+                }
 
                 await this.mongoDb.saveObject(env.mongoDb.collection,{
                     transfer,
                     storage,
                     pathObj,
-                    mediaInfos,
+                    ...mediaInfos,
                     convertingStatus:"start",
                     transferId: transferId,
                     fileId: fileId
                 });
-
-
 
                 await this.convertService.cloudConvertVideo(fileFromS3,exportPath,async() => {
                     
@@ -112,7 +115,7 @@ export class MultiPartService {
                     })
 
                     const signedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 })
-                
+
                     const convert = await this.convertService.extractImagesFromVideo(
                         signedUrl,
                         pathObj.images,
@@ -122,6 +125,7 @@ export class MultiPartService {
                             await this.mongoDb.saveObject(env.mongoDb.collection,{
                                 transfer,
                                 storage,
+                                ...mediaInfos,
                                 pathObj,
                                 convertingStatus:"finished",
                                 transferId: transferId,
@@ -163,11 +167,19 @@ export class MultiPartService {
                     });
                 },
                 async (event)=>{
-                    env.debug &&   console.log(event);
+                    env.debug && console.log(event);
                 });
             }
         } catch (e) {
             env.debug &&  console.log(e);
+            Sentry.captureException(e);
+            await this.mongoDb.saveObject(env.mongoDb.collection,{
+                transfer,
+                error: e, 
+                convertingStatus:"failed",
+                transferId: transferId,
+                fileId: fileId
+            });
         }
 
         res.send();
