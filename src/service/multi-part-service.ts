@@ -82,6 +82,26 @@ export class MultiPartService {
             const storage = await this.s3.send(command);
             const fileFromS3 = (storage.Key as string);
             let pathObj:any = {};
+
+            if(fileType.includes("audio")){
+                await this.mongoDb.saveObject(env.mongoDb.collection,{
+                    transfer,
+                    storage,
+                    pathObj,
+                    convertingStatus:"start",
+                    transferId: transferId,
+                    fileId: fileId
+                });
+                await this.mongoDb.saveObject(env.mongoDb.collection,{
+                    transfer,
+                    storage,
+                    pathObj,
+                    convertingStatus:"finished",
+                    transferId: transferId,
+                    fileId: fileId
+                });
+            }
+
             if (fileType.includes("video")) {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`,
@@ -170,6 +190,7 @@ export class MultiPartService {
                     env.debug && console.log(event);
                 });
             }
+
         } catch (e) {
             env.debug &&  console.log(e);
             Sentry.captureException(e);
