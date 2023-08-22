@@ -114,13 +114,14 @@ export class MultiPartService {
                 const mediaInfos = await this.convertService.getVideoInfos(fileFromS3)
 
                 if (!mediaInfos) {
-                    throw Error("No media infos for file")
+                    throw new Error("No media infos for file");
                 }
 
                 await this.mongoDb.saveObject(env.mongoDb.collection,{
                     transfer,
                     storage,
                     pathObj,
+                    exportPath,
                     ...mediaInfos,
                     convertingStatus:"start",
                     transferId: transferId,
@@ -146,6 +147,7 @@ export class MultiPartService {
                                 transfer,
                                 storage,
                                 ...mediaInfos,
+                                exportPath,
                                 pathObj,
                                 convertingStatus:"finished",
                                 transferId: transferId,
