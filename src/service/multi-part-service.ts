@@ -112,10 +112,7 @@ export class MultiPartService {
                 const exportPath = `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`;
 
                 const mediaInfos = await this.convertService.getVideoInfos(fileFromS3)
-
-                if (!mediaInfos) {
-                    throw new Error("No media infos for file");
-                }
+                const primaryColor = await this.convertService.getPrimaryColor(fileFromS3,"video");
 
                 await this.mongoDb.saveObject(env.mongoDb.collection,{
                     transfer,
@@ -123,13 +120,14 @@ export class MultiPartService {
                     pathObj,
                     exportPath,
                     ...mediaInfos,
+                    ...primaryColor,
                     convertingStatus:"start",
                     transferId: transferId,
                     fileId: fileId
                 });
 
                 await this.convertService.cloudConvertVideo(fileFromS3,exportPath,async() => {
-                    
+
                     const command = new GetObjectCommand({
                         Bucket: env.s3.bucketName,
                         Key: exportPath,
@@ -137,7 +135,7 @@ export class MultiPartService {
 
                     const signedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 })
 
-                    const convert = await this.convertService.extractImagesFromVideo(
+                    await this.convertService.extractImagesFromVideo(
                         signedUrl,
                         pathObj.images,
                         `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`,
@@ -147,6 +145,7 @@ export class MultiPartService {
                                 transfer,
                                 storage,
                                 ...mediaInfos,
+                                ...primaryColor,
                                 exportPath,
                                 pathObj,
                                 convertingStatus:"finished",
@@ -167,10 +166,13 @@ export class MultiPartService {
                     images : `${transferId}/images/${fileId}`
                 }
 
+                const primaryColor = await this.convertService.getPrimaryColor(fileFromS3,"image");
+
                 await this.mongoDb.saveObject(env.mongoDb.collection,{
                     transfer,
                     storage,
                     pathObj,
+                    primaryColor,
                     convertingStatus:"start",
                     transferId: transferId,
                     fileId: fileId
@@ -183,6 +185,7 @@ export class MultiPartService {
                         transfer,
                         storage,
                         pathObj,
+                        primaryColor,
                         transferId: transferId,
                         convertingStatus:"finished",
                         fileId: fileId
