@@ -170,18 +170,17 @@ export class Converter {
         })
     }
 
-    async getVideoInfos(key: string): Promise<any | undefined> {
+    async getPrimaryColor(key: string,contentType:"image"|"video" = "image"): Promise<any | undefined> {
 
         const params = new URLSearchParams([
             ["bucket", this.s3BucketName],
-            ["key", key]
+            ["key", key],
+            ["contentType",contentType]
         ])
 
         try {
-            const result = await axios.get(env.kloudConvert.apiInfo, { params })
-            let videoInfos = result.data.result
-            
-            return videoInfos
+            const result = await axios.get(env.kloudConvert.colorExtraction, { params })
+            return result.data.result
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const serverResponse: AxiosError = error;
@@ -194,7 +193,33 @@ export class Converter {
                 console.error(`Error: ${error}`);
             }
             return undefined;
-        };
+        }
+    }
+
+    async getVideoInfos(key: string): Promise<any | undefined> {
+
+        const params = new URLSearchParams([
+            ["bucket", this.s3BucketName],
+            ["key", key]
+        ])
+
+        try {
+            const result = await axios.get(env.kloudConvert.apiInfo, { params })
+            return result.data.result
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const serverResponse: AxiosError = error;
+                if (serverResponse && serverResponse.response) {
+                    console.error(`Server responded with status code ${serverResponse.response.status}`);
+                    console.error(`Response body: `, serverResponse.response.data);
+                }
+            } else {
+                // Nicht-Axios-Fehler
+                console.error(`Error: ${error}`);
+                throw Error("No media infos for file");
+            }
+            return undefined;
+        }
     }
 
     async cloudConvertVideo(inputFile: string, exportFile: string, finished: (event: JobEventData) => {}) {
@@ -375,7 +400,7 @@ export class Converter {
 
         await client.connect()
 
-        const listener = (message: string, channel: string) => {
+        const listener = (message: string) => {
             let jobStatus: JobStatus = JSON.parse(message)
             callback(jobStatus);
             console.log("listener:", jobId, jobStatus);
