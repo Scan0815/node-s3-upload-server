@@ -180,7 +180,7 @@ export class Converter {
 
         try {
             const result = await axios.get(env.kloudConvert.colorExtraction, { params })
-            return result.data
+            return result.data.result;
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const serverResponse: AxiosError = error;
@@ -205,7 +205,7 @@ export class Converter {
 
         try {
             const result = await axios.get(env.kloudConvert.apiInfo, { params })
-            return result.data.result
+            return result.data.result;
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const serverResponse: AxiosError = error;
