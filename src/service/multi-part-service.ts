@@ -68,6 +68,8 @@ export class MultiPartService {
     }
 
     async finalizeMultipartUpload(req: Request, res: Response): Promise<void> {
+
+        console.log("finalizeMultipartUpload")
         const { fileId, fileKey, fileType, transferId, parts, transfer } = req.body;
         const command = new CompleteMultipartUploadCommand({
             Bucket: env.s3.bucketName,
@@ -102,7 +104,7 @@ export class MultiPartService {
                 });
             }
 
-            if (fileType.includes("video") && fileType.includes("image/gif")) {
+            if (fileType.includes("video") || fileType.includes("image/gif")) {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`,
                     converted : `${transferId}/converted/${fileId}`,
@@ -124,9 +126,9 @@ export class MultiPartService {
                     transferId: transferId,
                     fileId: fileId
                 });
-
                 await this.convertService.cloudConvertVideo(fileFromS3,exportPath,async() => {
 
+                    console.log("cloudConvertVideo finished")
                     const command = new GetObjectCommand({
                         Bucket: env.s3.bucketName,
                         Key: exportPath,
