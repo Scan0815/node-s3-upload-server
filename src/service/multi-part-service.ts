@@ -119,7 +119,7 @@ export class MultiPartService {
                     pathObj,
                     exportPath,
                     ...mediaInfos,
-                    ...primaryColor,
+                    primaryColor,
                     convertingStatus:"start",
                     transferId: transferId,
                     fileId: fileId
@@ -144,7 +144,7 @@ export class MultiPartService {
                                 transfer,
                                 storage,
                                 ...mediaInfos,
-                                ...primaryColor,
+                                primaryColor,
                                 exportPath,
                                 pathObj,
                                 convertingStatus:"finished",
