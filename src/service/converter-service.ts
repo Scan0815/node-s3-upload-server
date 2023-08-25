@@ -1,12 +1,12 @@
 let env = require("../.env.json");
 import cloudConvert from 'cloudconvert';
-import {ImageConverter} from "./image-convert-command-service";
-import {ICrop} from "../interfaces/imageConverter";
-import {JobEventData} from "cloudconvert/built/lib/JobsResource";
-import {TaskEventData} from "cloudconvert/built/lib/TasksResource";
-import axios, {AxiosError, AxiosResponse} from 'axios';
-import {createClient} from 'redis';
-import {JobStatus} from '../interfaces/JobStatus';
+import { ImageConverter } from "./image-convert-command-service";
+import { ICrop } from "../interfaces/imageConverter";
+import { JobEventData } from "cloudconvert/built/lib/JobsResource";
+import { TaskEventData } from "cloudconvert/built/lib/TasksResource";
+import axios, { AxiosError, AxiosResponse } from 'axios';
+import { createClient } from 'redis';
+import { JobStatus } from '../interfaces/JobStatus';
 
 export class Converter {
     private readonly cloudConvert: cloudConvert;
@@ -15,7 +15,6 @@ export class Converter {
     private readonly s3secretAccessKey: string;
     private readonly s3EndPoint: string;
     private readonly s3Region: string;
-
     constructor(apiKey: string, sandbox: boolean = false, s3BucketName: string, s3Region: string, s3accessKeyId: string, s3secretAccessKey: string, s3EndPoint: string) {
         console.log("init video converter");
         this.cloudConvert = new cloudConvert(apiKey, sandbox);
@@ -37,6 +36,7 @@ export class Converter {
                            } | null,
                            size: string,
                            blur: boolean) {
+
 
 
         const inputPath: string = `resources/${inputFile}`;
@@ -174,12 +174,12 @@ export class Converter {
         })
     }
 
-    async getPrimaryColor(key: string, contentType: "image" | "video" = "image"): Promise<any | undefined> {
+    async getPrimaryColor(key: string,contentType:"image"|"video" = "image"): Promise<any | undefined> {
 
         const params = new URLSearchParams([
             ["bucket", this.s3BucketName],
             ["key", key],
-            ["contentType", contentType]
+            ["contentType",contentType]
         ])
 
         try {
@@ -209,7 +209,7 @@ export class Converter {
 
         try {
             const result = await axios.get(env.kloudConvert.apiInfo, {params})
-            return result.data.result
+            return result.data.result;
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const serverResponse: AxiosError = error;
@@ -351,6 +351,7 @@ export class Converter {
                 finished(result);
             }
         })
+
 
         /*await this.cloudConvert.jobs.subscribeEvent(job.id, 'finished', event => {
             // Job has finished

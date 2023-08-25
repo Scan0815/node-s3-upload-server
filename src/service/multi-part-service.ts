@@ -102,7 +102,7 @@ export class MultiPartService {
                 });
             }
 
-            if (fileType.includes("video")) {
+            if (fileType.includes("video") && fileType.includes("image/gif")) {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`,
                     converted : `${transferId}/converted/${fileId}`,
@@ -110,7 +110,6 @@ export class MultiPartService {
                 }
 
                 const exportPath = `${pathObj.converted}/${fileKey.replace(/\.[^.]+$/, '.mp4')}`;
-
                 const mediaInfos = await this.convertService.getVideoInfos(fileFromS3)
                 const primaryColor = await this.convertService.getPrimaryColor(fileFromS3,"video");
 
