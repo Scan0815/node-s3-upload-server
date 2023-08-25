@@ -292,7 +292,7 @@ export class Converter {
                 "operation": "thumbnail",
                 "engine": "ffmpeg",
                 "command": "ffmpeg",
-                "arguments": `-ss 00:00:03 -i ${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
+                "arguments": `-ss 00:00:01 -i ${inputFile} -vframes 1 resources/output/${thumbnailFileName}`,
                 "input": ["convert-video-from-s3"],
                 "filename": thumbnailFileName,
                 "output_format": "jpg"
