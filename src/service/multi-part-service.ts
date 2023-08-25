@@ -102,7 +102,7 @@ export class MultiPartService {
                 });
             }
 
-            if (fileType.includes("video") && fileType.includes("image/gif")) {
+            if (fileType.includes("video") || fileType.includes("image/gif")) {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`,
                     converted : `${transferId}/converted/${fileId}`,
