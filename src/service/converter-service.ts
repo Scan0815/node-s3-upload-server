@@ -26,16 +26,16 @@ export class Converter {
     }
 
     createImageConvertTask(inputTask: string,
-        outputDir: string,
-        inputFile: string,
-        crop: {
-            x1: number;
-            y1: number;
-            x2: number;
-            y2: number;
-        } | null,
-        size: string,
-        blur: boolean) {
+                           outputDir: string,
+                           inputFile: string,
+                           crop: {
+                               x1: number;
+                               y1: number;
+                               x2: number;
+                               y2: number;
+                           } | null,
+                           size: string,
+                           blur: boolean) {
 
 
 
@@ -161,7 +161,11 @@ export class Converter {
         })
         const job = await this.convert(tasks);
 
-        await this.subscribeToJob(job!.id, (result) => {
+        if (!job || !job.id) {
+            throw new Error("Job could not be created");
+        }
+
+        await this.subscribeToJob(job.id, (result) => {
             console.log("finished:", result, result.status);
             if (result.status === "completed") {
                 //handle finished
@@ -179,8 +183,8 @@ export class Converter {
         ])
 
         try {
-            const result = await axios.get(env.kloudConvert.colorExtraction, { params })
-            return result.data.result;
+            const result = await axios.get(env.kloudConvert.colorExtraction, {params})
+            return result.data.result
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const serverResponse: AxiosError = error;
@@ -204,7 +208,7 @@ export class Converter {
         ])
 
         try {
-            const result = await axios.get(env.kloudConvert.apiInfo, { params })
+            const result = await axios.get(env.kloudConvert.apiInfo, {params})
             return result.data.result;
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -336,6 +340,10 @@ export class Converter {
 
         const job = await this.convert(tasks);
 
+        if (!job || !job.id) {
+            throw new Error("Job not available and this should not happen.");
+        }
+
         await this.subscribeToJob(job?.id as string, (result) => {
             console.log("finished:", result, result.status);
             if (result.status === "completed") {
@@ -400,15 +408,24 @@ export class Converter {
 
         await client.connect()
 
+        let retries = 0;
         const listener = (message: string) => {
             let jobStatus: JobStatus = JSON.parse(message)
             callback(jobStatus);
             console.log("listener:", jobId, jobStatus);
         }
 
-        console.log("subscribe:", jobId);
-
-        await client.subscribe(jobId, listener);
+        try {
+            await client.subscribe(jobId, listener);
+        } catch (e) {
+            console.log("subscribe error:", e);
+            if (retries < 4) {
+                retries++;
+                setTimeout(() => {
+                    this.subscribeToJob(jobId, callback);
+                }, 1000);
+            }
+        }
     }
 
 }
