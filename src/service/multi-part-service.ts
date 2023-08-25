@@ -69,7 +69,6 @@ export class MultiPartService {
 
     async finalizeMultipartUpload(req: Request, res: Response): Promise<void> {
 
-        console.log("finalizeMultipartUpload")
         const { fileId, fileKey, fileType, transferId, parts, transfer } = req.body;
         const command = new CompleteMultipartUploadCommand({
             Bucket: env.s3.bucketName,
@@ -162,7 +161,7 @@ export class MultiPartService {
 
             }
 
-            if (fileType.includes("image")) {
+            if (fileType.includes("image") && !fileType.includes("gif")) {
                 pathObj = {
                     images : `${transferId}/images/${fileId}`
                 }
