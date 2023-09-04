@@ -1,7 +1,7 @@
 {
-  "name": "s3-mutipart-upload-server",
+  "name": "node-s3-upload-server",
   "version": "1.0.1",
-  "description": "S3 Mutipart upload server for S3 compatible apis",
+  "description": "S3 Multipart upload server for S3 compatible apis",
   "main": "build/server.js",
   "scripts": {
     "prepare": "npm run build",
