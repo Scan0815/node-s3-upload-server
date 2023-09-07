@@ -91,7 +91,8 @@ export class MultiPartService {
                     pathObj,
                     convertingStatus:"start",
                     transferId: transferId,
-                    fileId: fileId
+                    fileId: fileId,
+                    createdAt:Date.now()
                 });
                 await this.mongoDb.saveObject(env.mongoDb.collection,{
                     transfer,
@@ -99,7 +100,8 @@ export class MultiPartService {
                     pathObj,
                     convertingStatus:"finished",
                     transferId: transferId,
-                    fileId: fileId
+                    fileId: fileId,
+                    createdAt:Date.now()
                 });
             }
 
@@ -123,7 +125,8 @@ export class MultiPartService {
                     primaryColor,
                     convertingStatus:"start",
                     transferId: transferId,
-                    fileId: fileId
+                    fileId: fileId,
+                    createdAt:Date.now()
                 });
                 await this.convertService.cloudConvertVideo(fileFromS3,exportPath,async() => {
 
@@ -150,7 +153,8 @@ export class MultiPartService {
                                 pathObj,
                                 convertingStatus:"finished",
                                 transferId: transferId,
-                                fileId: fileId
+                                fileId: fileId,
+                                createdAt:Date
                             });
                         },
                         async (event)=>{
@@ -175,7 +179,8 @@ export class MultiPartService {
                     primaryColor,
                     convertingStatus:"start",
                     transferId: transferId,
-                    fileId: fileId
+                    fileId: fileId,
+                    createdAt:Date.now()
                 });
 
                 await this.convertService.createImages(fileFromS3, pathObj.images, transfer.exIf.crop,
@@ -188,7 +193,8 @@ export class MultiPartService {
                         primaryColor,
                         transferId: transferId,
                         convertingStatus:"finished",
-                        fileId: fileId
+                        fileId: fileId,
+                        createdAt:Date.now()
                     });
                 },
                 async (event)=>{
@@ -204,7 +210,8 @@ export class MultiPartService {
                 error: e, 
                 convertingStatus:"failed",
                 transferId: transferId,
-                fileId: fileId
+                fileId: fileId,
+                createdAt:Date.now()
             });
         }
 
