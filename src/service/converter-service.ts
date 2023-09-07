@@ -1,12 +1,12 @@
 let env = require("../.env.json");
 import cloudConvert from 'cloudconvert';
-import { ImageConverter } from "./image-convert-command-service";
-import { ICrop } from "../interfaces/imageConverter";
-import { JobEventData } from "cloudconvert/built/lib/JobsResource";
-import { TaskEventData } from "cloudconvert/built/lib/TasksResource";
-import axios, { AxiosError, AxiosResponse } from 'axios';
-import { createClient } from 'redis';
-import { JobStatus } from '../interfaces/JobStatus';
+import {ImageConverter} from "./image-convert-command-service";
+import {ICrop} from "../interfaces/imageConverter";
+import {JobEventData} from "cloudconvert/built/lib/JobsResource";
+import {TaskEventData} from "cloudconvert/built/lib/TasksResource";
+import axios, {AxiosError, AxiosResponse} from 'axios';
+import {createClient} from 'redis';
+import {JobStatus} from '../interfaces/JobStatus';
 
 export class Converter {
     private readonly cloudConvert: cloudConvert;
@@ -38,7 +38,6 @@ export class Converter {
                            blur: boolean) {
 
 
-
         const inputPath: string = `resources/${inputFile}`;
 
         const outputPath: string = blur ? `resources/output/${size}-${inputFile}-blur` : `resources/output/${size}-${inputFile}`;
@@ -54,6 +53,7 @@ export class Converter {
             converter.strip(),
             converter.interlace("Plane"),
             converter.quality(85),
+            converter.limit(100)
         ];
 
         if (crop) {
@@ -159,6 +159,9 @@ export class Converter {
                 "input": [name]
             }
         })
+
+        console.log("Sending task to cloudconvert");
+
         const job = await this.convert(tasks);
 
         if (!job || !job.id) {
@@ -174,12 +177,12 @@ export class Converter {
         })
     }
 
-    async getPrimaryColor(key: string,contentType:"image"|"video" = "image"): Promise<any | undefined> {
+    async getPrimaryColor(key: string, contentType: "image" | "video" = "image"): Promise<any | undefined> {
 
         const params = new URLSearchParams([
             ["bucket", this.s3BucketName],
             ["key", key],
-            ["contentType",contentType]
+            ["contentType", contentType]
         ])
 
         try {
@@ -365,7 +368,6 @@ export class Converter {
 
 
     async convert(job: any) {
-        //console.log("convert",env.kloudConvert.api,job);
         const result = await this.sendJsonData(env.kloudConvert.api, job)
         console.log(result, "result");
         return result;

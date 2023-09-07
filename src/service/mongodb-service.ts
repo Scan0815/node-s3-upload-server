@@ -53,8 +53,6 @@ export class MongodbService {
         } catch (error) {
             console.log('Fehler beim Speichern des Objekts', error);
             throw error;
-        } finally {
-            await this.close();
         }
     }
 
