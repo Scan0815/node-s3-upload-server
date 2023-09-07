@@ -54,6 +54,5 @@ export class MongodbService {
             console.log('Fehler beim Speichern des Objekts', error);
             throw error;
         }
-    }
 
 }
