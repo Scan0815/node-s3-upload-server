@@ -7,7 +7,7 @@ export class MongodbService {
     private readonly password: string|null;
     private readonly port: string|null;
     private client: MongoClient;
-
+    private db:any
     constructor(url: string, dbName: string|null = null, username: string|null= null, password: string|null= null, port: string|null = null) {
         this.url = url;
         this.dbName = dbName;
@@ -15,6 +15,9 @@ export class MongodbService {
         this.password = password;
         this.port= port;
         this.client = new MongoClient(this.getConnectionString());
+        (async () => {
+            this.db = await this.connect();
+        })();
     }
 
     private getConnectionString(): string {
@@ -43,8 +46,7 @@ export class MongodbService {
 
     public async saveObject(collectionName: string, object: any): Promise<InsertOneResult> {
         try {
-            const db = await this.connect();
-            const collection = db.collection(collectionName);
+            const collection = this.db.collection(collectionName);
             const result = await collection.insertOne(object);
             console.log('Objekt erfolgreich gespeichert:', result.insertedId);
             return result;
