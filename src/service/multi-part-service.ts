@@ -233,7 +233,6 @@ export class MultiPartService {
 
         try {
 
-
             //if fileKey or transfer is not set, return 404
             if (!fileKey || !transferId || !fileType || !fileId || !storage || !transfer || !sizes) {
 
