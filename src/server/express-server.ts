@@ -77,6 +77,11 @@ export class ExpressServer {
                 await this.service.finalizeMultipartUpload(req, res);
             })();
         });
+        this._app.post("/uploads/retry", (req, res) => {
+            (async () => {
+                await this.service.retry(req, res);
+            })();
+        });
     }
 
     get app(): express.Application {
