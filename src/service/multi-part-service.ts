@@ -228,21 +228,21 @@ export class MultiPartService {
      */
     async retry(req: Request, res: Response): Promise<void> {
 
-        const {fileKey, transferId, fileType, fileId, storage, transfer, sizes} = req.body;
+        const {fileKey, transferId, fileId, storage, transfer, sizes, operation} = req.body;
         let pathObj: any = {};
 
         try {
+            const requiredParams: string[] = [fileKey, transferId, fileId, storage, transfer, sizes];
 
-            //if fileKey or transfer is not set, return 404
-            if (!fileKey || !transferId || !fileType || !fileId || !storage || !transfer || !sizes) {
 
-                //return 404 with the message that the fileKey or transfer is not set
+            if (requiredParams.some(param => !param)) {
                 res.status(404).send({
                     message: "One or all of the required parameters are not set."
                 });
-
                 return;
             }
+
+            const fileType = transfer["fileType"];
 
             const command = new HeadObjectCommand({
                 Bucket: env.s3.bucketName,
@@ -257,8 +257,19 @@ export class MultiPartService {
                 });
                 return;
             }
+            // no need to send everything to cloudconvert again, when a thumbnail size is missing
+
+            const allowedVideoOperations: string[] = ["video-thumbnail-only", "video-all"]
 
             if (fileType.includes("video") || fileType.includes("image/gif")) {
+
+                if (!allowedVideoOperations.includes(operation)) {
+                    res.status(404).send({
+                        message: "The requested operation is not allowed."
+                    });
+                    return;
+                }
+
                 pathObj = {
                     images: `${transferId}/images/${fileId}`,
                     converted: `${transferId}/converted/${fileId}`,
@@ -279,40 +290,14 @@ export class MultiPartService {
                     createdAt: Date.now()
                 });
 
-                await this.convertService.cloudConvertVideo(fileKey, exportPath, async () => {
-
-                    const command = new GetObjectCommand({
-                        Bucket: env.s3.bucketName,
-                        Key: exportPath,
-                    })
-
-                    const signedUrl = await getSignedUrl(this.s3, command, {expiresIn: 3600})
-
-                    await this.convertService.extractImagesFromVideo(
-                        signedUrl,
-                        pathObj.images,
-                        `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`,
-                        async (event) => {
-                            env.debug && console.log(event);
-                            await this.mongoDb.saveObject(env.mongoDb.collection, {
-                                transfer,
-                                storage,
-                                ...mediaInfos,
-                                primaryColor,
-                                exportPath,
-                                pathObj,
-                                convertingStatus: "retry-finished",
-                                transferId: transferId,
-                                fileId: fileId,
-                                createdAt: Date
-                            });
-                        },
-                        async (event) => {
-                            env.debug && console.log(event);
-                        },
-                        sizes
-                    )
-                });
+                if (operation === "video-thumbnail-only") {
+                    // export path must be the fileKey
+                    await this.retryExtractThumbnailsFromVideo(pathObj, fileKey, transfer, storage, mediaInfos, primaryColor, fileKey, transferId, fileId, sizes);
+                } else {
+                    await this.convertService.cloudConvertVideo(fileKey, exportPath, async () => {
+                        await this.retryExtractThumbnailsFromVideo(pathObj, fileKey, transfer, storage, mediaInfos, primaryColor, exportPath, transferId, fileId, sizes);
+                    });
+                }
             }
 
             if (fileType.includes("image") && !fileType.includes("gif")) {
@@ -367,5 +352,40 @@ export class MultiPartService {
                 createdAt: Date.now()
             });
         }
+    }
+
+    private async retryExtractThumbnailsFromVideo(pathObj: any, fileKey: any, transfer: any, storage: any, mediaInfos: any, primaryColor: any, exportPath: string, transferId: string, fileId: string, sizes: string[]) {
+
+        const command = new GetObjectCommand({
+            Bucket: env.s3.bucketName,
+            Key: exportPath,
+        })
+
+        const signedUrl = await getSignedUrl(this.s3, command, {expiresIn: 3600})
+
+        await this.convertService.extractImagesFromVideo(
+            signedUrl,
+            pathObj.images,
+            `${pathObj.thumbnail}/${fileKey.replace(/\.[^.]+$/, '.jpg')}`,
+            async (event) => {
+                env.debug && console.log(event);
+                await this.mongoDb.saveObject(env.mongoDb.collection, {
+                    transfer,
+                    storage,
+                    ...mediaInfos,
+                    primaryColor,
+                    exportPath,
+                    pathObj,
+                    convertingStatus: "retry-finished",
+                    transferId: transferId,
+                    fileId: fileId,
+                    createdAt: Date
+                });
+            },
+            async (event) => {
+                env.debug && console.log(event);
+            },
+            sizes
+        )
     }
 }
